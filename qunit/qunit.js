@@ -1,5 +1,5 @@
 /**
- * QUnit v1.11.0pre - A JavaScript Unit Testing Framework
+ * QUnit v1.11.0 - A JavaScript Unit Testing Framework
  *
  * http://qunitjs.com
  *
@@ -32,6 +32,35 @@ var QUnit,
 				return false;
 			}
 		}())
+	},
+	/**
+	 * Provides a normalized error string, correcting an issue
+	 * with IE 7 (and prior) where Error.prototype.toString is
+	 * not properly implemented
+	 *
+	 * Based on http://es5.github.com/#x15.11.4.4
+	 *
+	 * @param {String|Error} error
+	 * @return {String} error message
+	 */
+	errorString = function( error ) {
+		var name, message,
+			errorString = error.toString();
+		if ( errorString.substring( 0, 7 ) === "[object" ) {
+			name = error.name ? error.name.toString() : "Error";
+			message = error.message ? error.message.toString() : "";
+			if ( name && message ) {
+				return name + ": " + message;
+			} else if ( name ) {
+				return name;
+			} else if ( message ) {
+				return message;
+			} else {
+				return "Error";
+			}
+		} else {
+			return errorString;
+		}
 	},
 	/**
 	 * Makes a clone of an object using only Array or Object as base,
@@ -601,7 +630,7 @@ assert = {
 				expectedOutput = null;
 			// expected is a regexp
 			} else if ( QUnit.objectType( expected ) === "regexp" ) {
-				ok = expected.test( actual );
+				ok = expected.test( errorString( actual ) );
 			// expected is a constructor
 			} else if ( actual instanceof expected ) {
 				ok = true;
@@ -962,7 +991,8 @@ extend( QUnit, {
 			querystring += encodeURIComponent( key ) + "=" +
 				encodeURIComponent( params[ key ] ) + "&";
 		}
-		return window.location.pathname + querystring.slice( 0, -1 );
+		return window.location.protocol + "//" + window.location.host +
+			window.location.pathname + querystring.slice( 0, -1 );
 	},
 
 	extend: extend,
@@ -1468,12 +1498,12 @@ function extend( a, b ) {
  * @param {Function} fn
  */
 function addEvent( elem, type, fn ) {
+	// Standards-based browsers
 	if ( elem.addEventListener ) {
 		elem.addEventListener( type, fn, false );
-	} else if ( elem.attachEvent ) {
-		elem.attachEvent( "on" + type, fn );
+	// IE
 	} else {
-		fn(); // WTF
+		elem.attachEvent( "on" + type, fn );
 	}
 }
 
@@ -1986,7 +2016,7 @@ QUnit.diff = (function() {
 			os = {};
 
 		for ( i = 0; i < n.length; i++ ) {
-			if ( ns[ n[i] ] == null ) {
+			if ( !hasOwn.call( ns, n[i] ) ) {
 				ns[ n[i] ] = {
 					rows: [],
 					o: null
@@ -1996,7 +2026,7 @@ QUnit.diff = (function() {
 		}
 
 		for ( i = 0; i < o.length; i++ ) {
-			if ( os[ o[i] ] == null ) {
+			if ( !hasOwn.call( os, o[i] ) ) {
 				os[ o[i] ] = {
 					rows: [],
 					n: null
@@ -2009,7 +2039,7 @@ QUnit.diff = (function() {
 			if ( !hasOwn.call( ns, i ) ) {
 				continue;
 			}
-			if ( ns[i].rows.length === 1 && os[i] !== undefined && os[i].rows.length === 1 ) {
+			if ( ns[i].rows.length === 1 && hasOwn.call( os, i ) && os[i].rows.length === 1 ) {
 				n[ ns[i].rows[0] ] = {
 					text: n[ ns[i].rows[0] ],
 					row: os[i].rows[0]
