@@ -14,7 +14,7 @@
   "homepage": "http://qunitjs.com",
   "repository": {
     "type": "git",
-    "url": "git://github.com/jquery/qunit.git"
+    "url": "git@github.com:GerHobbelt/qunit.git"
   },
   "bugs": {
     "url": "https://github.com/jquery/qunit/issues"
