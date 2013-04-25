@@ -17,16 +17,18 @@
 (function() {
 	'use strict';
 
-	var args = require('system').args;
+	var url, page, timeout,
+		args = require('system').args;
 
 	// arg[0]: scriptName, args[1...]: arguments
-	if (args.length !== 2) {
-		console.error('Usage:\n  phantomjs runner.js [url-of-your-qunit-testsuite]');
+	if (args.length < 2 || args.length > 3) {
+		console.error('Usage:\n  phantomjs runner.js [url-of-your-qunit-testsuite] [timeout-in-seconds]');
 		phantom.exit(1);
 	}
 
-	var url = args[1],
-		page = require('webpage').create();
+	url = args[1];
+	page = require('webpage').create();
+	timeout = args[2] != null ? parseInt(args[2], 10) : null;
 
 	// Route `console.log()` calls from within the Page context to the main Phantom context (i.e. current `this`)
 	page.onConsoleMessage = function(msg) {
@@ -64,6 +66,14 @@
 				phantom.exit(1);
 			}
 
+			// Set a timeout on the test running, otherwise tests with async problems will hang forever
+			if (typeof timeout === 'number') {
+				setTimeout(function() {
+					console.error('The specified timeout of ' + timeout + ' seconds has expired. Aborting...');
+					phantom.exit(1);
+				}, timeout * 1000);
+			}
+
 			// Do nothing... the callback mechanism will handle everything!
 		}
 	});
@@ -88,9 +98,10 @@
 					}
 
 					response += 'expected: ' + details.expected + ', but was: ' + details.actual;
-					if (details.source) {
-						response += "\n" + details.source;
-					}
+				}
+
+				if (details.source) {
+					response += "\n" + details.source;
 				}
 
 				current_test_assertions.push('Failed assertion: ' + response);
