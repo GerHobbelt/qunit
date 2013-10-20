@@ -1,5 +1,5 @@
 /**
- * QUnit v1.12.0pre - A JavaScript Unit Testing Framework
+ * QUnit v1.12.0 - A JavaScript Unit Testing Framework
  *
  * http://qunitjs.com
  *
@@ -20,6 +20,7 @@ var QUnit,
 	hasOwn = Object.prototype.hasOwnProperty,
 	// Keep a local reference to Date (GH-283)
 	Date = window.Date,
+	setTimeout = window.setTimeout,
 	defined = {
 		setTimeout: typeof window.setTimeout !== "undefined",
 		sessionStorage: (function() {
@@ -168,11 +169,11 @@ Test.prototype = {
 			saveGlobal();
 		}
 		if ( config.notrycatch ) {
-			this.testEnvironment.setup.call( this.testEnvironment );
+			this.testEnvironment.setup.call( this.testEnvironment, QUnit.assert );
 			return;
 		}
 		try {
-			this.testEnvironment.setup.call( this.testEnvironment );
+			this.testEnvironment.setup.call( this.testEnvironment, QUnit.assert );
 		} catch( e ) {
 			QUnit.pushFailure( "Setup failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1 ) );
 		}
@@ -220,11 +221,11 @@ Test.prototype = {
 			if ( typeof this.callbackRuntime === "undefined" ) {
 				this.callbackRuntime = +new Date() - this.callbackStarted;
 			}
-			this.testEnvironment.teardown.call( this.testEnvironment );
+			this.testEnvironment.teardown.call( this.testEnvironment, QUnit.assert );
 			return;
 		} else {
 			try {
-				this.testEnvironment.teardown.call( this.testEnvironment );
+				this.testEnvironment.teardown.call( this.testEnvironment, QUnit.assert );
 			} catch( e ) {
 				QUnit.pushFailure( "Teardown failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1 ) );
 			}
@@ -466,7 +467,7 @@ QUnit = {
 		}
 		// A slight delay, to avoid any current callbacks
 		if ( defined.setTimeout ) {
-			window.setTimeout(function() {
+			setTimeout(function() {
 				if ( config.semaphore > 0 ) {
 					return;
 				}
@@ -489,7 +490,7 @@ QUnit = {
 
 		if ( config.testTimeout && defined.setTimeout ) {
 			clearTimeout( config.timeout );
-			config.timeout = window.setTimeout(function() {
+			config.timeout = setTimeout(function() {
 				QUnit.ok( false, "Test timed out" );
 				config.semaphore = 1;
 				QUnit.start();
@@ -848,6 +849,11 @@ extend( QUnit, {
 	},
 
 	// Resets the test setup. Useful for tests that modify the DOM.
+	/*
+	DEPRECATED: Use multiple tests instead of resetting inside a test.
+	Use testStart or testDone for custom cleanup.
+	This method will throw an error in 2.0, and will be removed in 2.1
+	*/
 	reset: function() {
 		var fixture = id( "qunit-fixture" );
 		if ( fixture ) {
@@ -1253,6 +1259,7 @@ function done() {
 			total: config.moduleStats.all
 		});
 	}
+	delete config.previousModule;
 
 	var i, key,
 		banner = id( "qunit-banner" ),
@@ -1445,7 +1452,7 @@ function process( last ) {
 		if ( !defined.setTimeout || config.updateRate <= 0 || ( ( new Date().getTime() - start ) < config.updateRate ) ) {
 			config.queue.shift()();
 		} else {
-			window.setTimeout( next, 13 );
+			setTimeout( next, 13 );
 			break;
 		}
 	}
@@ -1567,7 +1574,7 @@ function removeClass( elem, name ) {
 		set = set.replace(" " + name + " " , " ");
 	}
 	// If possible, trim it for prettiness, but not necessarily
-	elem.className = window.jQuery ? jQuery.trim( set ) : ( set.trim ? set.trim() : set );
+	elem.className = typeof set.trim === "function" ? set.trim() : set.replace(/^\s+|\s+$/g, "");
 }
 
 function id( name ) {
