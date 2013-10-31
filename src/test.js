@@ -89,7 +89,7 @@ Test.prototype = {
 		try {
 			this.testEnvironment.setup.call( this.testEnvironment, QUnit.assert );
 		} catch( e ) {
-			QUnit.pushFailure( "Setup failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1 ) );
+			QUnit.pushFailure( "Setup failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1, true ) );
 		}
 	},
 	run: function() {
@@ -119,7 +119,7 @@ Test.prototype = {
 		} catch( e ) {
 			this.callbackRuntime = +new Date() - this.callbackStarted;
 
-			QUnit.pushFailure( "Died on test #" + (this.assertions.length + 1) + " " + this.stack + ": " + ( e.message || e ), extractStacktrace( e, 0 ) );
+			QUnit.pushFailure( "Died on test #" + (this.assertions.length + 1) + " " + this.stack + ": " + ( e.message || e ), extractStacktrace( e, 0, true ) );
 			// else next test will carry the responsibility
 			saveGlobal();
 
@@ -141,7 +141,7 @@ Test.prototype = {
 			try {
 				this.testEnvironment.teardown.call( this.testEnvironment, QUnit.assert );
 			} catch( e ) {
-				QUnit.pushFailure( "Teardown failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1 ) );
+				QUnit.pushFailure( "Teardown failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1, true ) );
 			}
 		}
 		checkPollution();

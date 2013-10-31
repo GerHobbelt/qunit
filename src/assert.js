@@ -17,7 +17,7 @@ assert = QUnit.assert = {
 		result = !!result;
 		msg = msg || ( result ? "okay" : "failed" );
 
-		var source,
+		var stack,
 			details = {
 				module: config.current.module,
 				name: config.current.testName,
@@ -28,11 +28,12 @@ assert = QUnit.assert = {
 		msg = "<span class='test-message'>" + escapeText( msg ) + "</span>";
 
 		if ( !result ) {
-			source = sourceFromStacktrace( 2 );
-			if ( source ) {
-				details.source = source;
+			stack = sourceFromStacktrace( 2, true );
+			if ( stack ) {
+				details.source = stack[0];
+				details.stack = stack;
 				msg += "<table><tr class='test-source'><th>Source: </th><td><pre>" +
-					escapeText( source ) +
+					escapeText( details.source ) +
 					"</pre></td></tr></table>";
 			}
 		}

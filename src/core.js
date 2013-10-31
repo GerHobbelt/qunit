@@ -413,7 +413,7 @@ extend( QUnit, {
 			throw new Error( "assertion outside test context, was " + sourceFromStacktrace() );
 		}
 
-		var output, source,
+		var output, stack,
 			details = {
 				module: config.current.module,
 				name: config.current.testName,
@@ -437,11 +437,12 @@ extend( QUnit, {
 				output += "<tr class='test-diff'><th>Diff: </th><td><pre>" + QUnit.diff( expected, actual ) + "</pre></td></tr>";
 			}
 
-			source = sourceFromStacktrace();
+			stack = sourceFromStacktrace();
 
-			if ( source ) {
-				details.source = source;
-				output += "<tr class='test-source'><th>Source: </th><td><pre>" + escapeText( source ) + "</pre></td></tr>";
+			if ( stack ) {
+				details.source = stack[0];
+				details.stack = stack;
+				output += "<tr class='test-source'><th>Source: </th><td><pre>" + escapeText( details.source ) + "</pre></td></tr>";
 			}
 
 			output += "</table>";
@@ -455,7 +456,7 @@ extend( QUnit, {
 		});
 	},
 
-	pushFailure: function( message, source, actual ) {
+	pushFailure: function( message, stack, actual ) {
 		if ( !config.current ) {
 			throw new Error( "pushFailure() assertion outside test context, was " + sourceFromStacktrace(2) );
 		}
@@ -478,9 +479,10 @@ extend( QUnit, {
 			output += "<tr class='test-actual'><th>Result: </th><td><pre>" + escapeText( actual ) + "</pre></td></tr>";
 		}
 
-		if ( source ) {
-			details.source = source;
-			output += "<tr class='test-source'><th>Source: </th><td><pre>" + escapeText( source ) + "</pre></td></tr>";
+		if ( stack ) {
+			details.source = stack[0];
+			details.stack = stack;
+			output += "<tr class='test-source'><th>Source: </th><td><pre>" + escapeText( details.source ) + "</pre></td></tr>";
 		}
 
 		output += "</table>";
@@ -731,10 +733,10 @@ window.onerror = function ( error, filePath, linerNr ) {
 			if ( QUnit.config.current.ignoreGlobalErrors ) {
 				return true;
 			}
-			QUnit.pushFailure( error, filePath + ":" + linerNr );
+			QUnit.pushFailure( error, [filePath + ":" + linerNr] );
 		} else {
 			QUnit.test( "global failure", extend( function() {
-				QUnit.pushFailure( error, filePath + ":" + linerNr );
+				QUnit.pushFailure( error, [filePath + ":" + linerNr] );
 			}, { validTest: validTest } ) );
 		}
 		return false;
@@ -858,14 +860,18 @@ function validTest( test ) {
 // so far supports only Firefox, Chrome and Opera (buggy), Safari (for real exceptions)
 // Later Safari and IE10 are supposed to support error.stack as well
 // See also https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Error/Stack
-function extractStacktrace( e, offset ) {
+function extractStacktrace( e, offset, produceStack ) {
 	offset = offset === undefined ? 3 : offset;
 
 	var stack, include, i;
 
 	if ( e.stacktrace ) {
 		// Opera
-		return e.stacktrace.split( "\n" )[ offset + 3 ];
+		if (!produceStack) {
+			return e.stacktrace.split( "\n" )[ offset + 3 ];
+		} else {
+			return e.stacktrace.split( "\n" ).slice( offset + 3 );
+		}
 	} else if ( e.stack ) {
 		// Firefox, Chrome
 		stack = e.stack.split( "\n" );
@@ -881,10 +887,18 @@ function extractStacktrace( e, offset ) {
 				include.push( stack[ i ] );
 			}
 			if ( include.length ) {
-				return include.join( "\n" );
+				if (!produceStack) {
+					return include.join( "\n" );
+				} else {
+					return include;
+				}
 			}
 		}
-		return stack[ offset ];
+		if (!produceStack) {
+			return stack[ offset ];
+		} else {
+			return stack.slice( offset );
+		}
 	} else if ( e.sourceURL ) {
 		// Safari, PhantomJS
 		// hopefully one day Safari provides actual stacktraces
@@ -893,7 +907,11 @@ function extractStacktrace( e, offset ) {
 			return;
 		}
 		// for actual exceptions, this is useful
-		return e.sourceURL + ":" + e.line;
+		if (!produceStack) {
+			return e.sourceURL + ":" + e.line;
+		} else {
+			return [e.sourceURL + ":" + e.line];
+		}
 	}
 }
 function sourceFromStacktrace( offset ) {
