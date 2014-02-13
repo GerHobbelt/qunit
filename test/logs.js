@@ -38,9 +38,10 @@ QUnit.log(function(context) {
 	logContext = context;
 });
 
-module("logs1");
+QUnit.module("logs1");
 
-test("test1", 15, function( assert ) {
+test("test1", function( assert ) {
+	expect( 15 );
 	assert.equal( begin, 1, "QUnit.begin calls" );
 	assert.equal( moduleStart, 1, "QUnit.moduleStart calls" );
 	assert.equal( testStart, 1, "QUnit.testStart calls" );
@@ -85,14 +86,18 @@ test("test1", 15, function( assert ) {
 
 	assert.equal( log, 14, "QUnit.log calls" );
 });
-test("test2", 11, function( assert ) {
+
+test("test2", function( assert ) {
+	expect( 11 );
 	assert.equal( begin, 1, "QUnit.begin calls" );
 	assert.equal( moduleStart, 1, "QUnit.moduleStart calls" );
 	assert.equal( testStart, 2, "QUnit.testStart calls" );
 	assert.equal( testDone, 1, "QUnit.testDone calls" );
 	assert.equal( moduleDone, 0, "QUnit.moduleDone calls" );
 
-	assert.ok( typeof testDoneContext.duration === "number" , "testDone context: duration" );
+	assert.equal( typeof testDoneContext.runtime, "number" , "testDone context: runtime" );
+	delete testDoneContext.runtime;
+	// DEPRECATED: remove this delete when removing the duration property
 	delete testDoneContext.duration;
 	assert.deepEqual( testDoneContext, {
 		module: "logs1",
@@ -113,9 +118,10 @@ test("test2", 11, function( assert ) {
 	assert.equal( log, 25, "QUnit.log calls" );
 });
 
-module("logs2");
+QUnit.module("logs2");
 
-test( "test1", 9, function( assert ) {
+test( "test1", function( assert ) {
+	expect( 9 );
 	assert.equal( begin, 1, "QUnit.begin calls" );
 	assert.equal( moduleStart, 2, "QUnit.moduleStart calls" );
 	assert.equal( testStart, 3, "QUnit.testStart calls" );
@@ -138,7 +144,8 @@ test( "test1", 9, function( assert ) {
 
 	assert.equal( log, 34, "QUnit.log calls" );
 });
-test( "test2", 8, function( assert ) {
+test( "test2", function( assert ) {
+	expect( 8 );
 	assert.equal( begin, 1, "QUnit.begin calls" );
 	assert.equal( moduleStart, 2, "QUnit.moduleStart calls" );
 	assert.equal( testStart, 4, "QUnit.testStart calls" );
@@ -160,7 +167,7 @@ var testAutorun = true;
 
 QUnit.done(function() {
 
-	if (!testAutorun) {
+	if ( !testAutorun ) {
 		return;
 	}
 
@@ -171,15 +178,17 @@ QUnit.done(function() {
 	// Since these tests run *after* done, and as such
 	// QUnit is not able to know whether more tests are coming
 	// the module starts/ends after each test.
-	module("autorun");
+	QUnit.module( "autorun" );
 
-	test("first", function( assert ) {
-		assert.equal(moduleStart, 1, "test started");
-		assert.equal(moduleDone, 0, "test in progress");
-	});
+	setTimeout(function() {
+		test( "first", function( assert ) {
+			assert.equal( moduleStart, 1, "test started" );
+			assert.equal( moduleDone, 0, "test in progress" );
+		});
 
-	test("second", function( assert ) {
-		assert.equal(moduleStart, 2, "test started");
-		assert.equal(moduleDone, 1, "test in progress");
-	});
+		test( "second", function( assert ) {
+			assert.equal( moduleStart, 2, "test started" );
+			assert.equal( moduleDone, 1, "test in progress" );
+		});
+	}, 5000 );
 });

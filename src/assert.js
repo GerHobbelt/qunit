@@ -123,7 +123,7 @@ assert = QUnit.assert = {
 			ok = false;
 
 		// 'expected' is optional
-		if ( typeof expected === "string" ) {
+		if ( !message && typeof expected === "string" ) {
 			message = expected;
 			expected = null;
 		}
@@ -137,16 +137,30 @@ assert = QUnit.assert = {
 		config.current.ignoreGlobalErrors = false;
 
 		if ( actual ) {
+
 			// we don't want to validate thrown error
 			if ( !expected ) {
 				ok = true;
 				expectedOutput = null;
+
+			// expected is an Error object
+			} else if ( expected instanceof Error ) {
+				ok = actual instanceof Error &&
+					 actual.name === expected.name &&
+					 actual.message === expected.message;
+
 			// expected is a regexp
 			} else if ( QUnit.objectType( expected ) === "regexp" ) {
 				ok = expected.test( errorString( actual ) );
+
+			// expected is a string
+			} else if ( QUnit.objectType( expected ) === "string" ) {
+				ok = expected === errorString( actual );
+
 			// expected is a constructor
 			} else if ( actual instanceof expected ) {
 				ok = true;
+
 			// expected is a validation function which returns true is validation passed
 			} else if ( expected.call( {}, actual ) === true ) {
 				expectedOutput = null;
@@ -168,10 +182,11 @@ extend( QUnit.constructor.prototype, assert );
 
 /**
  * @deprecated since 1.9.0
- * Kept root "raises()" for backwards compatibility.
- * (Note that we don't introduce assert.raises).
+ * Kept to avoid TypeErrors for undefined methods.
  */
-QUnit.constructor.prototype.raises = assert[ "throws" ];
+QUnit.constructor.prototype.raises = function() {
+	QUnit.push( false, false, false, "QUnit.raises has been deprecated since 2012 (fad3c1ea), use QUnit.throws instead" );
+};
 
 /**
  * @deprecated since 1.0.0, replaced with error pushes since 1.3.0

@@ -251,6 +251,8 @@ Test.prototype = {
 			failed: bad,
 			passed: this.assertions.length - bad,
 			total: this.assertions.length,
+			runtime: this.runtime,
+			// DEPRECATED: this property will be removed in 2.0.0, use runtime instead
 			duration: this.runtime
 		});
 
