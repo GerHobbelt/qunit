@@ -1,12 +1,7 @@
 /*jshint node:true */
 module.exports = function( grunt ) {
 
-grunt.loadNpmTasks( "grunt-git-authors" );
-grunt.loadNpmTasks( "grunt-contrib-concat" );
-grunt.loadNpmTasks( "grunt-contrib-jshint" );
-grunt.loadNpmTasks( "grunt-contrib-qunit" );
-grunt.loadNpmTasks( "grunt-contrib-watch" );
-
+require( "load-grunt-tasks" )( grunt );
 
 function process( code ) {
 	return code
@@ -60,12 +55,33 @@ grunt.initConfig({
 		}
 	},
 	qunit: {
+		options: {
+			timeout: 30000,
+			"--web-security": "no",
+			coverage: {
+				src: [ "dist/qunit.js" ],
+				instrumentedFiles: "temp/",
+				htmlReport: "build/report/coverage",
+				lcovReport: "build/report/lcov",
+				linesThresholdPct: 70
+			}
+		},
 		qunit: [
 			"test/index.html",
 			"test/async.html",
 			"test/logs.html",
 			"test/setTimeout.html"
 		]
+	},
+	coveralls: {
+		options: {
+			force: true
+		},
+		all: {
+
+			// LCOV coverage file relevant to every target
+			src: "build/report/lcov/lcov.info"
+		}
 	},
 	watch: {
 		files: [ "*", ".jshintrc", "{src,test}/**/{*,.*}" ],
@@ -79,22 +95,20 @@ grunt.registerTask( "testswarm", function( commit, configFile ) {
 		runs = {},
 		done = this.async();
 
-	["index", "async", "setTimeout"].forEach(function (suite) {
-		runs[suite] = config.testUrl + commit + "/test/" + suite + ".html";
+	[ "index", "async", "setTimeout" ].forEach(function ( suite ) {
+		runs[ suite ] = config.testUrl + commit + "/test/" + suite + ".html";
 	});
 
-	testswarm.createClient( {
-		url: config.swarmUrl,
-		pollInterval: 10000,
-		timeout: 1000 * 60 * 30
-	} )
-	.addReporter( testswarm.reporters.cli )
-	.auth( {
-		id: config.authUsername,
-		token: config.authToken
-	} )
-	.addjob(
-		{
+	testswarm
+		.createClient({
+			url: config.swarmUrl
+		})
+		.addReporter( testswarm.reporters.cli )
+		.auth({
+			id: config.authUsername,
+			token: config.authToken
+		})
+		.addjob({
 			name: "Commit <a href='https://github.com/jquery/qunit/commit/" + commit + "'>" +
 				commit.substr( 0, 10 ) + "</a>",
 			runs: runs,
@@ -104,8 +118,7 @@ grunt.registerTask( "testswarm", function( commit, configFile ) {
 				grunt.log.error( err );
 			}
 			done( passed );
-		}
-	);
+		});
 });
 
 // TODO: Extract this task later, if feasible
