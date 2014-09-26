@@ -25,7 +25,7 @@ grunt.initConfig({
 				"src/assert.js",
 				"src/equiv.js",
 				"src/dump.js",
-				"src/diff.js",
+				"external/jsdiff/jsdiff.js",
 				"src/export.js",
 				"src/outro.js"
 			],
@@ -45,14 +45,7 @@ grunt.initConfig({
 		},
 		gruntfile: [ "Gruntfile.js" ],
 		dist: [ "dist/*.js" ],
-		tests: {
-			options: {
-				jshintrc: "test/.jshintrc"
-			},
-			files: {
-				src: [ "test/**/*.js" ]
-			}
-		}
+		tests: [ "test/**/*.js" ]
 	},
 	qunit: {
 		options: {
@@ -84,16 +77,28 @@ grunt.initConfig({
 		}
 	},
 	watch: {
+		options: {
+			atBegin: true
+		},
 		files: [ "*", ".jshintrc", "{src,test}/**/{*,.*}" ],
 		tasks: "default"
 	}
 });
 
-grunt.registerTask( "testswarm", function( commit, configFile ) {
-	var testswarm = require( "testswarm" ),
-		config = grunt.file.readJSON( configFile ).qunit,
+grunt.registerTask( "testswarm", function( commit, configFile, projectName, browserSets, timeout ) {
+	var config,
+		testswarm = require( "testswarm" ),
 		runs = {},
 		done = this.async();
+
+	projectName = projectName || "qunit";
+	config = grunt.file.readJSON( configFile )[ projectName ];
+	browserSets = browserSets || config.browserSets;
+	if ( browserSets[ 0 ] === "[" ) {
+		// We got an array, parse it
+		browserSets = JSON.parse( browserSets );
+	}
+	timeout = timeout || 1000 * 60 * 15;
 
 	[ "index", "async", "setTimeout" ].forEach(function ( suite ) {
 		runs[ suite ] = config.testUrl + commit + "/test/" + suite + ".html";
@@ -112,7 +117,8 @@ grunt.registerTask( "testswarm", function( commit, configFile ) {
 			name: "Commit <a href='https://github.com/jquery/qunit/commit/" + commit + "'>" +
 				commit.substr( 0, 10 ) + "</a>",
 			runs: runs,
-			browserSets: [ "popular", "ios" ]
+			browserSets: browserSets,
+			timeout: timeout
 		}, function( err, passed ) {
 			if ( err ) {
 				grunt.log.error( err );
@@ -128,13 +134,6 @@ grunt.registerTask( "test-on-node", function() {
 		runDone = false,
 		done = this.async(),
 		QUnit = require( "./dist/qunit" );
-
-	// Make the current tests work in the Node.js environment by appending
-	// a bunch of properties into the `global` object
-	[ "test", "asyncTest", "start", "stop", "expect" ].forEach(function( method ) {
-		global[ method ] = QUnit[ method ];
-	});
-	global.QUnit = QUnit;
 
 	QUnit.testStart(function() {
 		testActive = true;
@@ -170,6 +169,7 @@ grunt.registerTask( "test-on-node", function() {
 	require( "./test/logs" );
 	require( "./test/test" );
 	require( "./test/deepEqual" );
+	require( "./test/globals" );
 
 	QUnit.load();
 });

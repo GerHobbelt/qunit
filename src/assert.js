@@ -4,44 +4,30 @@
 // - runLoggingCallbacks( "log", .. );
 // - config.current.assertions.push({ .. });
 assert = QUnit.assert = {
+
+	// Specify the number of expected assertions to guarantee that failed test (no assertions are run at all) don't slip through.
+	expect: function( asserts ) {
+		if ( arguments.length === 1 ) {
+			config.current.expected = asserts;
+		} else {
+			return config.current.expected;
+		}
+	},
+
 	/**
 	 * Asserts rough true-ish result.
 	 * @name ok
 	 * @function
 	 * @example ok( "asdfasdf".length > 5, "There must be at least 5 chars" );
 	 */
-	ok: function( result, msg ) {
-		if ( !config.current ) {
-			throw new Error( "ok() assertion outside test context, was " + sourceFromStacktrace(2) );
+	ok: function( result, message ) {
+		message = message || ( result ? "okay" : "failed, expected argument to be truthy, was: " +
+			QUnit.dump.parse( result ) );
+		if ( !!result ) {
+			QUnit.push( true, result, true, message );
+		} else {
+			QUnit.pushFailure( message, null, result );
 		}
-		result = !!result;
-		msg = msg || ( result ? "okay" : "failed" );
-
-		var stack,
-			details = {
-				module: config.current.module,
-				name: config.current.testName,
-				result: result,
-				message: msg
-			};
-
-		msg = "<span class='test-message'>" + escapeText( msg ) + "</span>";
-
-		if ( !result ) {
-			stack = sourceFromStacktrace( 2, true );
-			if ( stack ) {
-				details.source = stack[0];
-				details.stack = stack;
-				msg += "<table><tr class='test-source'><th>Source: </th><td><pre>" +
-					escapeText( details.source ) +
-					"</pre></td></tr></table>";
-			}
-		}
-		runLoggingCallbacks( "log", QUnit, details );
-		config.current.assertions.push({
-			result: result,
-			message: msg
-		});
 	},
 
 	/**
@@ -70,9 +56,9 @@ assert = QUnit.assert = {
 	 * @function
 	 */
 	propEqual: function( actual, expected, message ) {
-		actual = objectValues(actual);
-		expected = objectValues(expected);
-		QUnit.push( QUnit.equiv(actual, expected), actual, expected, message );
+		actual = objectValues( actual );
+		expected = objectValues( expected );
+		QUnit.push( QUnit.equiv( actual, expected ), actual, expected, message );
 	},
 
 	/**
@@ -80,9 +66,9 @@ assert = QUnit.assert = {
 	 * @function
 	 */
 	notPropEqual: function( actual, expected, message ) {
-		actual = objectValues(actual);
-		expected = objectValues(expected);
-		QUnit.push( !QUnit.equiv(actual, expected), actual, expected, message );
+		actual = objectValues( actual );
+		expected = objectValues( expected );
+		QUnit.push( !QUnit.equiv( actual, expected ), actual, expected, message );
 	},
 
 	/**
@@ -90,7 +76,7 @@ assert = QUnit.assert = {
 	 * @function
 	 */
 	deepEqual: function( actual, expected, message ) {
-		QUnit.push( QUnit.equiv(actual, expected), actual, expected, message );
+		QUnit.push( QUnit.equiv( actual, expected ), actual, expected, message );
 	},
 
 	/**
@@ -98,7 +84,7 @@ assert = QUnit.assert = {
 	 * @function
 	 */
 	notDeepEqual: function( actual, expected, message ) {
-		QUnit.push( !QUnit.equiv(actual, expected), actual, expected, message );
+		QUnit.push( !QUnit.equiv( actual, expected ), actual, expected, message );
 	},
 
 	/**
@@ -179,22 +165,3 @@ assert = QUnit.assert = {
  * Kept assertion helpers in root for backwards compatibility.
  */
 extend( QUnit.constructor.prototype, assert );
-
-/**
- * @deprecated since 1.9.0
- * Kept to avoid TypeErrors for undefined methods.
- */
-QUnit.constructor.prototype.raises = function() {
-	QUnit.push( false, false, false, "QUnit.raises has been deprecated since 2012 (fad3c1ea), use QUnit.throws instead" );
-};
-
-/**
- * @deprecated since 1.0.0, replaced with error pushes since 1.3.0
- * Kept to avoid TypeErrors for undefined methods.
- */
-QUnit.constructor.prototype.equals = function() {
-	QUnit.push( false, false, false, "QUnit.equals has been deprecated since 2009 (e88049a0), use QUnit.equal instead" );
-};
-QUnit.constructor.prototype.same = function() {
-	QUnit.push( false, false, false, "QUnit.same has been deprecated since 2009 (e88049a0), use QUnit.deepEqual instead" );
-};

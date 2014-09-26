@@ -18,7 +18,7 @@ Test.prototype = {
 			// `a` initialized at top of scope
 			a = document.createElement( "a" );
 			a.innerHTML = "Rerun";
-			a.href = QUnit.url({ testNumber: this.testNumber });
+			a.href = QUnit.url( { testNumber: this.testNumber } );
 
 			li = document.createElement( "li" );
 			li.appendChild( b );
@@ -31,8 +31,10 @@ Test.prototype = {
 	},
 	setup: function() {
 		if (
+
 			// Emit moduleStart when we're switching from one module to another
 			this.module !== config.previousModule ||
+
 				// They could be equal (both undefined) but if the previousModule property doesn't
 				// yet exist it means this is the first test in a suite that isn't wrapped in a
 				// module, in which case we'll just emit a moduleStart event for 'undefined'.
@@ -61,14 +63,13 @@ Test.prototype = {
 			teardown: function() {}
 		}, this.moduleTestEnvironment );
 
-		this.started = +new Date();
+		this.started = now();
 		runLoggingCallbacks( "testStart", QUnit, {
 			name: this.testName,
 			module: this.module
 		});
 
 		/*jshint camelcase:false */
-
 
 		/**
 		 * Expose the current test environment.
@@ -88,7 +89,7 @@ Test.prototype = {
 		}
 		try {
 			this.testEnvironment.setup.call( this.testEnvironment, QUnit.assert );
-		} catch( e ) {
+		} catch ( e ) {
 			QUnit.pushFailure( "Setup failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1, true ) );
 		}
 	},
@@ -105,21 +106,22 @@ Test.prototype = {
 			QUnit.stop();
 		}
 
-		this.callbackStarted = +new Date();
+		this.callbackStarted = now();
 
 		if ( config.notrycatch ) {
 			this.callback.call( this.testEnvironment, QUnit.assert );
-			this.callbackRuntime = +new Date() - this.callbackStarted;
+			this.callbackRuntime = now() - this.callbackStarted;
 			return;
 		}
 
 		try {
 			this.callback.call( this.testEnvironment, QUnit.assert );
-			this.callbackRuntime = +new Date() - this.callbackStarted;
-		} catch( e ) {
-			this.callbackRuntime = +new Date() - this.callbackStarted;
+			this.callbackRuntime = now() - this.callbackStarted;
+		} catch ( e ) {
+			this.callbackRuntime = now() - this.callbackStarted;
 
-			QUnit.pushFailure( "Died on test #" + (this.assertions.length + 1) + " " + this.stack + ": " + ( e.message || e ), extractStacktrace( e, 0, true ) );
+			QUnit.pushFailure( "Died on test #" + ( this.assertions.length + 1 ) + " " + this.stack + ": " + ( e.message || e ), extractStacktrace( e, 0, true ) );
+
 			// else next test will carry the responsibility
 			saveGlobal();
 
@@ -133,14 +135,14 @@ Test.prototype = {
 		config.current = this;
 		if ( config.notrycatch ) {
 			if ( typeof this.callbackRuntime === "undefined" ) {
-				this.callbackRuntime = +new Date() - this.callbackStarted;
+				this.callbackRuntime = now() - this.callbackStarted;
 			}
 			this.testEnvironment.teardown.call( this.testEnvironment, QUnit.assert );
 			return;
 		} else {
 			try {
 				this.testEnvironment.teardown.call( this.testEnvironment, QUnit.assert );
-			} catch( e ) {
+			} catch ( e ) {
 				QUnit.pushFailure( "Teardown failed on " + this.testName + ": " + ( e.message || e ), extractStacktrace( e, 1, true ) );
 			}
 		}
@@ -162,7 +164,7 @@ Test.prototype = {
 			bad = 0,
 			tests = id( "qunit-tests" );
 
-		this.runtime = +new Date() - this.started;
+		this.runtime = now() - this.started;
 		config.stats.all += this.assertions.length;
 		config.moduleStats.all += this.assertions.length;
 
@@ -171,7 +173,7 @@ Test.prototype = {
 			ol.className = "qunit-assert-list";
 
 			for ( i = 0; i < this.assertions.length; i++ ) {
-				assertion = this.assertions[i];
+				assertion = this.assertions[ i ];
 
 				li = document.createElement( "li" );
 				li.className = assertion.result ? "pass" : "fail";
@@ -204,19 +206,19 @@ Test.prototype = {
 			b = document.createElement( "strong" );
 			b.innerHTML = this.nameHtml + " <b class='counts'>(<b class='failed'>" + bad + "</b>, <b class='passed'>" + good + "</b>, " + this.assertions.length + ")</b>";
 
-			addEvent(b, "click", function() {
+			addEvent( b, "click", function() {
 				var next = b.parentNode.lastChild,
 					collapsed = hasClass( next, "qunit-collapsed" );
 				( collapsed ? removeClass : addClass )( next, "qunit-collapsed" );
 			});
 
-			addEvent(b, "dblclick", function( e ) {
+			addEvent( b, "dblclick", function( e ) {
 				var target = e && e.target ? e.target : window.event.srcElement;
 				if ( target.nodeName.toLowerCase() === "span" || target.nodeName.toLowerCase() === "b" ) {
 					target = target.parentNode;
 				}
 				if ( window.location && target.nodeName.toLowerCase() === "strong" ) {
-					window.location = QUnit.url({ testNumber: test.testNumber });
+					window.location = QUnit.url( { testNumber: test.testNumber } );
 				}
 			});
 
@@ -234,10 +236,9 @@ Test.prototype = {
 			li.appendChild( a );
 			li.appendChild( time );
 			li.appendChild( ol );
-
 		} else {
 			for ( i = 0; i < this.assertions.length; i++ ) {
-				if ( !this.assertions[i].result ) {
+				if ( !this.assertions[ i ].result ) {
 					bad++;
 					config.stats.bad++;
 					config.moduleStats.bad++;
@@ -252,6 +253,7 @@ Test.prototype = {
 			passed: this.assertions.length - bad,
 			total: this.assertions.length,
 			runtime: this.runtime,
+
 			// DEPRECATED: this property will be removed in 2.0.0, use runtime instead
 			duration: this.runtime
 		});
@@ -287,7 +289,7 @@ Test.prototype = {
 		// `bad` initialized at top of scope
 		// defer when previous test run passed, if storage is available
 		bad = QUnit.config.reorder && defined.sessionStorage &&
-						+sessionStorage.getItem( "qunit-test-" + this.module + "-" + this.testName );
+				+sessionStorage.getItem( "qunit-test-" + this.module + "-" + this.testName );
 
 		if ( bad ) {
 			run();
