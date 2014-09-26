@@ -1,3 +1,4 @@
+/*global ok: false, equal: false */
 (function( window ) {
 
 QUnit.module( "globals" );
@@ -42,21 +43,18 @@ QUnit.test( "QUnit exported methods", function( assert ) {
 	checkExported( assert, globals );
 });
 
-QUnit.test( "Assertion exported methods", function( assert ) {
-	var methods = [
-			"expect", "ok",
-			"equal", "notEqual",
-			"propEqual", "notPropEqual",
-			"deepEqual", "notDeepEqual",
-			"strictEqual", "notStrictEqual",
-			"throws"
-		];
+// Test deprecated exported Assert methods
+QUnit.test( "Exported assertions", function() {
+	QUnit.expect( 6 );
 
-	// 2 assertions per item on checkExported
-	// +1 assertion per item on the loop
-	assert.expect( methods.length * 3 );
+	QUnit.ok( true );
+	QUnit.equal( 2, 2 );
 
-	checkExported( assert, methods, true );
+	ok( true );
+	equal( 2, 2 );
+
+	QUnit.assert.ok( true );
+	QUnit.assert.equal( 2, 2 );
 });
 
 // Get a reference to the global object, like window in browsers

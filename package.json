@@ -2,7 +2,7 @@
   "name": "qunitjs",
   "title": "QUnit",
   "description": "An easy-to-use JavaScript Unit Testing framework.",
-  "version": "1.14.1-pre",
+  "version": "1.15.1-pre",
   "homepage": "http://qunitjs.com",
   "author": {
     "name": "jQuery Foundation and other contributors",
@@ -23,13 +23,13 @@
   "licenses": [
     {
       "type": "MIT",
-      "url": "https://github.com/jquery/qunit/blob/master/MIT-LICENSE.txt"
+      "url": "https://github.com/jquery/qunit/blob/master/LICENSE.txt"
     }
   ],
   "files": [
     "qunit/qunit.js",
     "qunit/qunit.css",
-    "MIT-LICENSE.txt"
+    "LICENSE.txt"
   ],
   "dependencies": {},
   "devDependencies": {
@@ -41,7 +41,9 @@
     "grunt-contrib-watch": ">=0.5.3",
     "grunt-coveralls": ">=0.3.0",
     "grunt-git-authors": ">=1.2.0",
-    "grunt-qunit-istanbul": ">=0.3.0",
+    "grunt-jscs": "0.6.1",
+    "grunt-qunit-istanbul": "0.4.5",
+    "grunt-search": "0.1.6",
     "load-grunt-tasks": ">=0.3.0",
     "testswarm": ">=1.1.0"
   },

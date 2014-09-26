@@ -22,6 +22,11 @@ QUnit.dump = (function() {
 	function array( arr, stack ) {
 		var i = arr.length,
 			ret = new Array( i );
+
+		if ( dump.maxDepth && dump.depth > dump.maxDepth ) {
+			return "[object Array]";
+		}
+
 		this.up();
 		while ( i-- ) {
 			ret[ i ] = this.parse( arr[ i ], undefined, stack );
@@ -32,25 +37,28 @@ QUnit.dump = (function() {
 
 	var reName = /^function (\w+)/,
 		dump = {
-			// type is used mostly internally, you can fix a (custom)type in advance
-			parse: function( obj, type, stack ) {
-				stack = stack || [];
-				var inStack, res,
-					parser = this.parsers[ type || this.typeOf( obj ) ];
 
-				type = typeof parser;
-				inStack = inArray( obj, stack );
+			// objType is used mostly internally, you can fix a (custom) type in advance
+			parse: function( obj, objType, stack ) {
+				stack = stack || [];
+				var res, parser, parserType,
+					inStack = inArray( obj, stack );
 
 				if ( inStack !== -1 ) {
 					return "recursion(" + ( inStack - stack.length ) + ")";
 				}
-				if ( type === "function" ) {
+
+				objType = objType || this.typeOf( obj  );
+				parser = this.parsers[ objType ];
+				parserType = typeof parser;
+
+				if ( parserType === "function" ) {
 					stack.push( obj );
 					res = parser.call( this, obj, stack );
 					stack.pop();
 					return res;
 				}
-				return ( type === "string" ) ? parser : this.parsers.error;
+				return ( parserType === "string" ) ? parser : this.parsers.error;
 			},
 			typeOf: function( obj ) {
 				var type;
@@ -64,7 +72,7 @@ QUnit.dump = (function() {
 					type = "date";
 				} else if ( QUnit.is( "function", obj ) ) {
 					type = "function";
-				} else if ( typeof obj.setInterval !== undefined && typeof obj.document !== "undefined" && typeof obj.nodeType === "undefined" ) {
+				} else if ( typeof obj.setInterval !== "undefined" && typeof obj.document !== "undefined" && typeof obj.nodeType === "undefined" ) {
 					type = "window";
 				} else if ( obj.nodeType === 9 ) {
 					type = "document";
@@ -87,7 +95,7 @@ QUnit.dump = (function() {
 				return type;
 			},
 			separator: function() {
-				return this.multiline ? this.HTML ? "<br />" : "\n" : this.HTML ? "&nbsp;" : " ";
+				return this.multiline ? this.HTML ? "<br />" : "\n" : this.HTML ? "&#160;" : " ";
 			},
 			// extra can be a number, shortcut for increasing-calling-decreasing
 			indent: function( extra ) {
@@ -96,7 +104,7 @@ QUnit.dump = (function() {
 				}
 				var chr = this.indentChar;
 				if ( this.HTML ) {
-					chr = chr.replace( /\t/g, "   " ).replace( / /g, "&nbsp;" );
+					chr = chr.replace( /\t/g, "   " ).replace( / /g, "&#160;" );
 				}
 				return new Array( this.depth + ( extra || 0 ) ).join( chr );
 			},
@@ -115,6 +123,8 @@ QUnit.dump = (function() {
 			join: join,
 			//
 			depth: 1,
+			maxDepth: 5,
+
 			// This is the list of parsers, to modify them, use dump.setParser
 			parsers: {
 				window: "[Window]",
@@ -127,6 +137,7 @@ QUnit.dump = (function() {
 				"undefined": "undefined",
 				"function": function( fn ) {
 					var ret = "function",
+
 						// functions never have name in IE
 						name = "name" in fn ? fn.name : ( reName.exec( fn ) || [] )[ 1 ];
 
@@ -142,8 +153,13 @@ QUnit.dump = (function() {
 				nodelist: array,
 				"arguments": array,
 				object: function( map, stack ) {
-					/*jshint forin:false */
-					var ret = [], keys, key, val, i, nonEnumerableProperties;
+					var keys, key, val, i, nonEnumerableProperties,
+						ret = [];
+
+					if ( dump.maxDepth && dump.depth > dump.maxDepth ) {
+						return "[object Object]";
+					}
+
 					dump.up();
 					keys = [];
 					for ( key in map ) {

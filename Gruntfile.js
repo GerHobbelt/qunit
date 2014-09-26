@@ -3,7 +3,13 @@ module.exports = function( grunt ) {
 
 require( "load-grunt-tasks" )( grunt );
 
-function process( code ) {
+function process( code, filepath ) {
+
+	// Make coverage ignore external files
+	if ( filepath.match( /^external\// ) ) {
+		code = "/*istanbul ignore next */\n" + code;
+	}
+
 	return code
 
 		// Embed version
@@ -25,34 +31,59 @@ grunt.initConfig({
 				"src/assert.js",
 				"src/equiv.js",
 				"src/dump.js",
-				"external/jsdiff/jsdiff.js",
 				"src/export.js",
-				"src/outro.js"
+				"src/outro.js",
+				"external/jsdiff/jsdiff.js",
+				"reporter/html.js"
 			],
 			dest: "dist/qunit.js"
 		},
 		"src-css": {
 			options: { process: process },
-			src: [
-				"src/qunit.css"
-			],
+			src: "src/qunit.css",
 			dest: "dist/qunit.css"
 		}
 	},
 	jshint: {
 		options: {
-			jshintrc: ".jshintrc"
+			jshintrc: true
 		},
-		gruntfile: [ "Gruntfile.js" ],
-		dist: [ "dist/*.js" ],
-		tests: [ "test/**/*.js" ]
+		all: [
+			"*.js",
+			"{test,dist}/**/*.js",
+			"build/*.js"
+		]
+	},
+	jscs: {
+		options: {
+			config: ".jscsrc"
+		},
+		all: [
+			"<%= jshint.all %>",
+			"!test/deepEqual.js"
+		]
+	},
+	search: {
+		options: {
+
+			// Ensure that the only HTML entities used are those with a special status in XHTML and that
+			// any common singleton/empty HTML elements end with the XHTML-compliant "/>" rather than ">"
+			searchString: /(&(?!gt|lt|amp|quot)[A-Za-z0-9]+;|<(?:hr|HR|br|BR|input|INPUT)(?![^>]*\/>)(?:\s+[^>]*)?>)/g,
+			logFormat: "console",
+			failOnMatch: true
+		},
+		xhtml: [
+			"src/**/*.js",
+			"external/**/*.js",
+			"reporter/**/*.js"
+		]
 	},
 	qunit: {
 		options: {
 			timeout: 30000,
 			"--web-security": "no",
 			coverage: {
-				src: [ "dist/qunit.js" ],
+				src: "dist/qunit.js",
 				instrumentedFiles: "temp/",
 				htmlReport: "build/report/coverage",
 				lcovReport: "build/report/lcov",
@@ -61,7 +92,8 @@ grunt.initConfig({
 		},
 		qunit: [
 			"test/index.html",
-			"test/async.html",
+			"test/autostart.html",
+			"test/startError.html",
 			"test/logs.html",
 			"test/setTimeout.html"
 		]
@@ -80,7 +112,12 @@ grunt.initConfig({
 		options: {
 			atBegin: true
 		},
-		files: [ "*", ".jshintrc", "{src,test}/**/{*,.*}" ],
+		files: [
+			".jshintrc",
+			"*.js",
+			"build/*.js",
+			"{src,test}/**/*.js"
+		],
 		tasks: "default"
 	}
 });
@@ -100,9 +137,10 @@ grunt.registerTask( "testswarm", function( commit, configFile, projectName, brow
 	}
 	timeout = timeout || 1000 * 60 * 15;
 
-	[ "index", "async", "setTimeout" ].forEach(function ( suite ) {
-		runs[ suite ] = config.testUrl + commit + "/test/" + suite + ".html";
-	});
+	[ "index", "autostart", "startError", "setTimeout" ]
+		.forEach(function( suite ) {
+			runs[ suite ] = config.testUrl + commit + "/test/" + suite + ".html";
+		});
 
 	testswarm
 		.createClient({
@@ -168,6 +206,9 @@ grunt.registerTask( "test-on-node", function() {
 
 	require( "./test/logs" );
 	require( "./test/test" );
+	require( "./test/async" );
+	require( "./test/promise" );
+	require( "./test/modules" );
 	require( "./test/deepEqual" );
 	require( "./test/globals" );
 
@@ -175,6 +216,6 @@ grunt.registerTask( "test-on-node", function() {
 });
 
 grunt.registerTask( "build", [ "concat" ] );
-grunt.registerTask( "default", [ "build", "jshint", "qunit", "test-on-node" ] );
+grunt.registerTask( "default", [ "build", "jshint", "jscs", "search", "qunit", "test-on-node" ] );
 
 };
