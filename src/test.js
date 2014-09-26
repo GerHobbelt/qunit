@@ -8,7 +8,7 @@ function Test( settings ) {
 	this.module = currentSuite.getFullName() || currentModuleName;
 	this.suite = currentSuite;
 	this.moduleTestEnvironment = config.currentModuleTestEnvironment;
-	this.stack = sourceFromStacktrace( 3 );
+	this.stack = sourceFromStacktrace( 3, true );
 	this.testId = generateHash( this.module, this.testName );
 
 	if ( settings.skip ) {
@@ -319,7 +319,7 @@ Test.prototype = {
 					function( error ) {
 						message = "Promise rejected " + ( !phase ? "during" : phase.replace( /Each$/, "" ) ) +
 							" " + test.testName + ": " + ( error.message || error );
-						test.pushFailure( message, extractStacktrace( error, 0 ) );
+						test.pushFailure( message, extractStacktrace( error, 0, true ) );
 
 						// else next test will carry the responsibility
 						saveGlobal();

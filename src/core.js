@@ -204,7 +204,7 @@ QUnit = {
 
 				QUnit.pushFailure(
 					"Called start() while already started (test's semaphore was 0 already)",
-					sourceFromStacktrace( 2 )
+					sourceFromStacktrace( 2, true )
 				);
 				return;
 			}
@@ -467,10 +467,10 @@ window.onerror = function( error, filePath, linerNr ) {
 			if ( QUnit.config.current.ignoreGlobalErrors ) {
 				return true;
 			}
-			QUnit.pushFailure( error, [filePath + ":" + linerNr] );
+			QUnit.pushFailure( error, filePath + ":" + linerNr );
 		} else {
 			QUnit.test( "global failure", extend(function() {
-				QUnit.pushFailure( error, [filePath + ":" + linerNr] );
+				QUnit.pushFailure( error, filePath + ":" + linerNr );
 			}, { validTest: true } ) );
 		}
 		return false;
@@ -560,12 +560,12 @@ function extractStacktrace( e, offset, produceStack ) {
 		if (!produceStack) {
 			return e.sourceURL + ":" + e.line;
 		} else {
-			return [e.sourceURL + ":" + e.line];
+			return [ e.sourceURL + ":" + e.line ];
 		}
 	}
 }
 
-function sourceFromStacktrace( offset ) {
+function sourceFromStacktrace( offset, produceStack ) {
 	var e = new Error();
 	if ( !e.stack ) {
 		try {
@@ -575,7 +575,7 @@ function sourceFromStacktrace( offset ) {
 			e = err;
 		}
 	}
-	return extractStacktrace( e, offset );
+	return extractStacktrace( e, offset, produceStack );
 }
 
 function synchronize( callback, last ) {
@@ -673,7 +673,7 @@ function pauseProcessing() {
 		config.timeout = setTimeout(function() {
 			if ( config.current ) {
 				config.current.semaphore = 0;
-				QUnit.pushFailure( "Test timed out", sourceFromStacktrace( 2 ) );
+				QUnit.pushFailure( "Test timed out", sourceFromStacktrace( 2, true ) );
 			} else {
 				throw new Error( "Test timed out" );
 			}

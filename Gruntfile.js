@@ -19,11 +19,18 @@ function process( code, filepath ) {
 		.replace( /@DATE/g, ( new Date() ).toISOString().replace( /:\d+\.\d+Z$/, "Z" ) );
 }
 
+// hack to make grunt-contrib-concat NOT insert CRLF on Windows:
+//     https://github.com/gruntjs/grunt-contrib-concat/issues/105
+grunt.util.linefeed = "\n";
+
 grunt.initConfig({
 	pkg: grunt.file.readJSON( "package.json" ),
 	concat: {
 		"src-js": {
-			options: { process: process },
+			options: {
+				process: process,
+				separator: "\n"
+			},
 			src: [
 				"src/intro.js",
 				"src/core.js",
@@ -40,7 +47,10 @@ grunt.initConfig({
 			dest: "dist/qunit.js"
 		},
 		"src-css": {
-			options: { process: process },
+			options: {
+				process: process,
+				separator: "\n"
+			},
 			src: "src/qunit.css",
 			dest: "dist/qunit.css"
 		}

@@ -29,7 +29,7 @@ QUnit.assert = Assert.prototype = {
 				popped = true;
 				resumeProcessing();
 			} else {
-				test.pushFailure( "Called the callback returned from `assert.async` more than once", sourceFromStacktrace( 2 ) );
+				test.pushFailure( "Called the callback returned from `assert.async` more than once", sourceFromStacktrace( 2, true ) );
 			}
 		};
 	},
@@ -49,7 +49,7 @@ QUnit.assert = Assert.prototype = {
 		}
 
 		if ( currentTest.usedAsync === true && currentTest.semaphore === 0 ) {
-			currentTest.pushFailure( "Assertion occurred after the final `assert.async` was resolved", sourceFromStacktrace( 2 ) );
+			currentTest.pushFailure( "Assertion occurred after the final `assert.async` was resolved", sourceFromStacktrace( 2, true ) );
 
 			// Allow this assertion to continue running anyway...
 		}
