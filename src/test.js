@@ -126,6 +126,9 @@ Test.prototype = {
 			// Restart the tests if they're blocking
 			if ( config.blocking ) {
 				QUnit.start();
+				while ( config.semaphore !== 0 ) { //Change By Wingify Team: Ticket https://github.com/jquery/qunit/pull/468
+					QUnit.start();
+				}
 			}
 		}
 	},
