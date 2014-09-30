@@ -1,12 +1,12 @@
 /*!
- * QUnit 1.14.0
+ * QUnit 1.14.0-wingify
  * http://qunitjs.com/
  *
  * Copyright 2013 jQuery Foundation and other contributors
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2014-01-31T16:40Z
+ * Date: 2014-09-30T06:36Z
  */
 
 (function( window ) {
@@ -1312,6 +1312,9 @@ Test.prototype = {
 			// Restart the tests if they're blocking
 			if ( config.blocking ) {
 				QUnit.start();
+				while ( config.semaphore !== 0 ) { //Change By Wingify Team: Ticket https://github.com/jquery/qunit/pull/468
+					QUnit.start();
+				}
 			}
 		}
 	},
