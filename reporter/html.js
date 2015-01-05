@@ -57,26 +57,6 @@ QUnit.init = function() {
 	}
 };
 
-// Resets the test setup. Useful for tests that modify the DOM.
-/*
-DEPRECATED: Use multiple tests instead of resetting inside a test.
-Use testStart or testDone for custom cleanup.
-This method will throw an error in 2.0, and will be removed in 2.1
-*/
-QUnit.reset = function() {
-
-	// Return on non-browser environments
-	// This is necessary to not break on node tests
-	if ( typeof window === "undefined" ) {
-		return;
-	}
-
-	var fixture = id( "qunit-fixture" );
-	if ( fixture ) {
-		fixture.innerHTML = config.fixture;
-	}
-};
-
 // Don't load the HTML Reporter on non-Browser environments
 if ( typeof window === "undefined" ) {
 	return;
@@ -85,7 +65,7 @@ if ( typeof window === "undefined" ) {
 var config = QUnit.config,
 	hasOwn = Object.prototype.hasOwnProperty,
 	defined = {
-		document: typeof window.document !== "undefined",
+		document: window.document !== undefined,
 		sessionStorage: (function() {
 			var x = "qunit-test-string";
 			try {
@@ -96,7 +76,8 @@ var config = QUnit.config,
 				return false;
 			}
 		}())
-	};
+	},
+	modulesList = [];
 
 /**
 * Escape text for attribute or text content.
@@ -206,7 +187,10 @@ function getUrlConfigHtml() {
 		escaped = escapeText( val.id );
 		escapedTooltip = escapeText( val.tooltip );
 
-		config[ val.id ] = QUnit.urlParams[ val.id ];
+		if ( config[ val.id ] === undefined ) {
+			config[ val.id ] = QUnit.urlParams[ val.id ];
+		}
+
 		if ( !val.value || typeof val.value === "string" ) {
 			urlConfigHtml += "<input id='qunit-urlconfig-" + escaped +
 				"' name='" + escaped + "' type='checkbox'" +
@@ -250,69 +234,145 @@ function getUrlConfigHtml() {
 	return urlConfigHtml;
 }
 
+// Handle "click" events on toolbar checkboxes and "change" for select menus.
+// Updates the URL with the new state of `config.urlConfig` values.
+function toolbarChanged() {
+	var updatedUrl, value,
+		field = this,
+		params = {};
+
+	// Detect if field is a select menu or a checkbox
+	if ( "selectedIndex" in field ) {
+		value = field.options[ field.selectedIndex ].value || undefined;
+	} else {
+		value = field.checked ? ( field.defaultValue || true ) : undefined;
+	}
+
+	params[ field.name ] = value;
+	updatedUrl = setUrl( params );
+
+	if ( "hidepassed" === field.name && "replaceState" in window.history ) {
+		config[ field.name ] = value || false;
+		if ( value ) {
+			addClass( id( "qunit-tests" ), "hidepass" );
+		} else {
+			removeClass( id( "qunit-tests" ), "hidepass" );
+		}
+
+		// It is not necessary to refresh the whole page
+		window.history.replaceState( null, "", updatedUrl );
+	} else {
+		window.location = updatedUrl;
+	}
+}
+
+function setUrl( params ) {
+	var key,
+		querystring = "?";
+
+	params = QUnit.extend( QUnit.extend( {}, QUnit.urlParams ), params );
+
+	for ( key in params ) {
+		if ( hasOwn.call( params, key ) ) {
+			if ( params[ key ] === undefined ) {
+				continue;
+			}
+			querystring += encodeURIComponent( key );
+			if ( params[ key ] !== true ) {
+				querystring += "=" + encodeURIComponent( params[ key ] );
+			}
+			querystring += "&";
+		}
+	}
+	return location.protocol + "//" + location.host +
+		location.pathname + querystring.slice( 0, -1 );
+}
+
+function applyUrlParams() {
+	var selectBox = id( "qunit-modulefilter" ),
+		selection = decodeURIComponent( selectBox.options[ selectBox.selectedIndex ].value ),
+		filter = id( "qunit-filter-input" ).value;
+
+	window.location = setUrl({
+		module: ( selection === "" ) ? undefined : selection,
+		filter: ( filter === "" ) ? undefined : filter,
+
+		// Remove testId filter
+		testId: undefined
+	});
+}
+
 function toolbarUrlConfigContainer() {
 	var urlConfigContainer = document.createElement( "span" );
 
 	urlConfigContainer.innerHTML = getUrlConfigHtml();
+	addClass( urlConfigContainer, "qunit-url-config" );
 
 	// For oldIE support:
 	// * Add handlers to the individual elements instead of the container
 	// * Use "click" instead of "change" for checkboxes
-	// * Fallback from event.target to event.srcElement
-	addEvents( urlConfigContainer.getElementsByTagName( "input" ), "click", function( event ) {
-		var params = {},
-			target = event.target || event.srcElement;
-		params[ target.name ] = target.checked ?
-			target.defaultValue || true :
-			undefined;
-		window.location = QUnit.url( params );
-	});
-	addEvents( urlConfigContainer.getElementsByTagName( "select" ), "change", function( event ) {
-		var params = {},
-			target = event.target || event.srcElement;
-		params[ target.name ] = target.options[ target.selectedIndex ].value || undefined;
-		window.location = QUnit.url( params );
-	});
+	addEvents( urlConfigContainer.getElementsByTagName( "input" ), "click", toolbarChanged );
+	addEvents( urlConfigContainer.getElementsByTagName( "select" ), "change", toolbarChanged );
 
 	return urlConfigContainer;
 }
 
-function getModuleNames() {
-	var i,
-		moduleNames = [];
+function toolbarLooseFilter() {
+	var filter = document.createElement( "form" ),
+		label = document.createElement( "label" ),
+		input = document.createElement( "input" ),
+		button = document.createElement( "button" );
 
-	for ( i in config.modules ) {
-		if ( config.modules.hasOwnProperty( i ) ) {
-			moduleNames.push( i );
+	addClass( filter, "qunit-filter" );
+
+	label.innerHTML = "Filter: ";
+
+	input.type = "text";
+	input.value = config.filter || "";
+	input.name = "filter";
+	input.id = "qunit-filter-input";
+
+	button.innerHTML = "Go";
+
+	label.appendChild( input );
+
+	filter.appendChild( label );
+	filter.appendChild( button );
+	addEvent( filter, "submit", function( ev ) {
+		applyUrlParams();
+
+		if ( ev && ev.preventDefault ) {
+			ev.preventDefault();
 		}
-	}
 
-	moduleNames.sort(function( a, b ) {
-		return a.localeCompare( b );
+		return false;
 	});
 
-	return moduleNames;
+	return filter;
 }
 
 function toolbarModuleFilterHtml() {
 	var i,
-		moduleFilterHtml = "",
-		moduleNames = getModuleNames();
+		moduleFilterHtml = "";
 
-	if ( moduleNames.length <= 1 ) {
+	if ( !modulesList.length ) {
 		return false;
 	}
 
+	modulesList.sort(function( a, b ) {
+		return a.localeCompare( b );
+	});
+
 	moduleFilterHtml += "<label for='qunit-modulefilter'>Module: </label>" +
 		"<select id='qunit-modulefilter' name='modulefilter'><option value='' " +
-		( config.module === undefined ? "selected='selected'" : "" ) +
+		( QUnit.urlParams.module === undefined ? "selected='selected'" : "" ) +
 		">< All Modules ></option>";
 
-	for ( i = 0; i < moduleNames.length; i++ ) {
+	for ( i = 0; i < modulesList.length; i++ ) {
 		moduleFilterHtml += "<option value='" +
-			escapeText( encodeURIComponent( moduleNames[ i ] ) ) + "' " +
-			( config.module === moduleNames[ i ] ? "selected='selected'" : "" ) +
-			">" + escapeText( moduleNames[ i ] ) + "</option>";
+			escapeText( encodeURIComponent( modulesList[ i ] ) ) + "' " +
+			( QUnit.urlParams.module === modulesList[ i ] ? "selected='selected'" : "" ) +
+			">" + escapeText( modulesList[ i ] ) + "</option>";
 	}
 	moduleFilterHtml += "</select>";
 
@@ -320,7 +380,8 @@ function toolbarModuleFilterHtml() {
 }
 
 function toolbarModuleFilter() {
-	var moduleFilter = document.createElement( "span" ),
+	var toolbar = id( "qunit-testrunner-toolbar" ),
+		moduleFilter = document.createElement( "span" ),
 		moduleFilterHtml = toolbarModuleFilterHtml();
 
 	if ( !moduleFilterHtml ) {
@@ -330,75 +391,17 @@ function toolbarModuleFilter() {
 	moduleFilter.setAttribute( "id", "qunit-modulefilter-container" );
 	moduleFilter.innerHTML = moduleFilterHtml;
 
-	addEvent( moduleFilter.lastChild, "change", function() {
-		var selectBox = moduleFilter.getElementsByTagName( "select" )[ 0 ],
-			selectedModule = decodeURIComponent( selectBox.options[ selectBox.selectedIndex ].value );
+	addEvent( moduleFilter.lastChild, "change", applyUrlParams );
 
-		window.location = QUnit.url({
-			module: ( selectedModule === "" ) ? undefined : selectedModule,
-
-			// Remove any existing filters
-			filter: undefined,
-			testId: undefined
-		});
-	});
-
-	return moduleFilter;
-}
-
-function toolbarFilter() {
-	var testList = id( "qunit-tests" ),
-		filter = document.createElement( "input" );
-
-	filter.type = "checkbox";
-	filter.id = "qunit-filter-pass";
-
-	addEvent( filter, "click", function() {
-		if ( filter.checked ) {
-			addClass( testList, "hidepass" );
-			if ( defined.sessionStorage ) {
-				sessionStorage.setItem( "qunit-filter-passed-tests", "true" );
-			}
-		} else {
-			removeClass( testList, "hidepass" );
-			if ( defined.sessionStorage ) {
-				sessionStorage.removeItem( "qunit-filter-passed-tests" );
-			}
-		}
-	});
-
-	if ( config.hidepassed || defined.sessionStorage &&
-			sessionStorage.getItem( "qunit-filter-passed-tests" ) ) {
-		filter.checked = true;
-
-		addClass( testList, "hidepass" );
-	}
-
-	return filter;
-}
-
-function toolbarLabel() {
-	var label = document.createElement( "label" );
-	label.setAttribute( "for", "qunit-filter-pass" );
-	label.setAttribute( "title", "Only show tests and assertions that fail. Stored in sessionStorage." );
-	label.innerHTML = "Hide passed tests";
-
-	return label;
+	toolbar.appendChild( moduleFilter );
 }
 
 function appendToolbar() {
-	var moduleFilter,
-		toolbar = id( "qunit-testrunner-toolbar" );
+	var toolbar = id( "qunit-testrunner-toolbar" );
 
 	if ( toolbar ) {
-		toolbar.appendChild( toolbarFilter() );
-		toolbar.appendChild( toolbarLabel() );
 		toolbar.appendChild( toolbarUrlConfigContainer() );
-
-		moduleFilter = toolbarModuleFilter();
-		if ( moduleFilter ) {
-			toolbar.appendChild( moduleFilter );
-		}
+		toolbar.appendChild( toolbarLooseFilter() );
 	}
 }
 
@@ -408,7 +411,7 @@ function appendBanner() {
 	if ( banner ) {
 		banner.className = "";
 		banner.innerHTML = "<a href='" +
-			QUnit.url({ filter: undefined, module: undefined, testId: undefined }) +
+			setUrl({ filter: undefined, module: undefined, testId: undefined }) +
 			"'>" + banner.innerHTML + "</a> ";
 	}
 }
@@ -445,24 +448,80 @@ function appendUserAgent() {
 	}
 }
 
+function appendTestsList( modules ) {
+	var i, l, x, z, test, moduleObj;
+
+	for ( i = 0, l = modules.length; i < l; i++ ) {
+		moduleObj = modules[ i ];
+
+		if ( moduleObj.name ) {
+			modulesList.push( moduleObj.name );
+		}
+
+		for ( x = 0, z = moduleObj.tests.length; x < z; x++ ) {
+			test = moduleObj.tests[ x ];
+
+			appendTest( test.name, test.testId, moduleObj.name );
+		}
+	}
+}
+
+function appendTest( name, testId, moduleName ) {
+	var title, rerunTrigger, testBlock, assertList,
+		tests = id( "qunit-tests" );
+
+	if ( !tests ) {
+		return;
+	}
+
+	title = document.createElement( "strong" );
+	title.innerHTML = getNameHtml( name, moduleName );
+
+	rerunTrigger = document.createElement( "a" );
+	rerunTrigger.innerHTML = "Rerun";
+	rerunTrigger.href = setUrl({ testId: testId });
+
+	testBlock = document.createElement( "li" );
+	testBlock.appendChild( title );
+	testBlock.appendChild( rerunTrigger );
+	testBlock.id = "qunit-test-output-" + testId;
+
+	assertList = document.createElement( "ol" );
+	assertList.className = "qunit-assert-list";
+
+	testBlock.appendChild( assertList );
+
+	tests.appendChild( testBlock );
+}
+
 // HTML Reporter initialization and load
-QUnit.begin(function() {
+QUnit.begin(function( details ) {
 	var qunit = id( "qunit" );
 
-	if ( qunit ) {
-		qunit.innerHTML =
+	// Fixture is the only one necessary to run without the #qunit element
+	storeFixture();
+
+	if ( !qunit ) {
+		return;
+	}
+
+	qunit.innerHTML =
 		"<h1 id='qunit-header'>" + escapeText( document.title ) + "</h1>" +
 		"<h2 id='qunit-banner'></h2>" +
 		"<div id='qunit-testrunner-toolbar'></div>" +
 		"<h2 id='qunit-userAgent'></h2>" +
 		"<ol id='qunit-tests'></ol>";
-	}
 
 	appendBanner();
 	appendTestResults();
 	appendUserAgent();
 	appendToolbar();
-	storeFixture();
+	appendTestsList( details.modules );
+	toolbarModuleFilter();
+
+	if ( config.hidepassed ) {
+		addClass( qunit.lastChild, "hidepass" );
+	}
 });
 
 QUnit.done(function( details ) {
@@ -529,35 +588,20 @@ function getNameHtml( name, module ) {
 }
 
 QUnit.testStart(function( details ) {
-	var a, b, li, running, assertList,
-		name = getNameHtml( details.name, details.module ),
-		tests = id( "qunit-tests" );
+	var running, testBlock;
 
-	if ( tests ) {
-		b = document.createElement( "strong" );
-		b.innerHTML = name;
+	testBlock = id( "qunit-test-output-" + details.testId );
+	if ( testBlock ) {
+		testBlock.className = "running";
+	} else {
 
-		a = document.createElement( "a" );
-		a.innerHTML = "Rerun";
-		a.href = QUnit.url({ testId: details.testId });
-
-		li = document.createElement( "li" );
-		li.appendChild( b );
-		li.appendChild( a );
-		li.className = "running";
-		li.id = "qunit-test-output" + details.testId;
-
-		assertList = document.createElement( "ol" );
-		assertList.className = "qunit-assert-list";
-
-		li.appendChild( assertList );
-
-		tests.appendChild( li );
+		// Report later registered tests
+		appendTest( details.name, details.testId, details.module );
 	}
 
 	running = id( "qunit-testresult" );
 	if ( running ) {
-		running.innerHTML = "Running: <br />" + name;
+		running.innerHTML = "Running: <br />" + getNameHtml( details.name, details.module );
 	}
 
 });
@@ -565,7 +609,7 @@ QUnit.testStart(function( details ) {
 QUnit.log(function( details ) {
 	var assertList, assertLi,
 		message, expected, actual,
-		testItem = id( "qunit-test-output" + details.testId );
+		testItem = id( "qunit-test-output-" + details.testId );
 
 	if ( !testItem ) {
 		return;
@@ -620,16 +664,12 @@ QUnit.testDone(function( details ) {
 		good, bad, testCounts, skipped,
 		tests = id( "qunit-tests" );
 
-	// QUnit.reset() is deprecated and will be replaced for a new
-	// fixture reset function on QUnit 2.0/2.1.
-	// It's still called here for backwards compatibility handling
-	QUnit.reset();
-
 	if ( !tests ) {
 		return;
 	}
 
-	testItem = id( "qunit-test-output" + details.testId );
+	testItem = id( "qunit-test-output-" + details.testId );
+
 	assertList = testItem.getElementsByTagName( "ol" )[ 0 ];
 
 	good = details.passed;
@@ -659,7 +699,7 @@ QUnit.testDone(function( details ) {
 		details.assertions.length + ")</b>";
 
 	if ( details.skipped ) {
-		addClass( testItem, "skipped" );
+		testItem.className = "skipped";
 		skipped = document.createElement( "em" );
 		skipped.className = "qunit-skipped-label";
 		skipped.innerHTML = "skipped";

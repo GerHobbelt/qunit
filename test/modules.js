@@ -1,40 +1,24 @@
-// Before and after each tests
-QUnit.config.beforeEach = function() {
-	this.lastHook = "global-beforeEach";
-};
-
-QUnit.config.afterEach = function( assert ) {
-	if ( this.hooksTest ) {
-		assert.strictEqual( this.lastHook, "module-afterEach", "Global afterEach runs after module's afterEach" );
-		this.hooksTest = false;
-	}
-
-	if ( this.contextTest ) {
-		assert.ok( true );
-		this.contextTest = false;
-	}
-};
-
 QUnit.module( "beforeEach/afterEach", {
-	beforeEach: function( assert ) {
-		assert.strictEqual( this.lastHook, "global-beforeEach", "Global beforeEach runs before module's beforeEach" );
+	beforeEach: function() {
 		this.lastHook = "module-beforeEach";
 	},
 	afterEach: function( assert ) {
 		if ( this.hooksTest ) {
-			assert.strictEqual( this.lastHook, "test-block", "Module's afterEach runs after current test block" );
+			assert.strictEqual( this.lastHook, "test-block",
+				"Module's afterEach runs after current test block" );
 			this.lastHook = "module-afterEach";
 		}
 	}
 });
 
 QUnit.test( "hooks order", function( assert ) {
-	assert.expect( 4 );
+	assert.expect( 2 );
 
 	// This will trigger an assertion on the global and one on the module's afterEach
 	this.hooksTest = true;
 
-	assert.strictEqual( this.lastHook, "module-beforeEach", "Module's beforeEach runs before current test block" );
+	assert.strictEqual( this.lastHook, "module-beforeEach",
+		"Module's beforeEach runs before current test block" );
 	this.lastHook = "test-block";
 });
 
@@ -46,14 +30,14 @@ QUnit.module( "Test context object", {
 		for ( key in this ) {
 			keys.push( key );
 		}
-		assert.deepEqual( keys, [ "helper", "lastHook" ] );
+		assert.deepEqual( keys, [ "helper" ] );
 	},
 	afterEach: function() {},
 	helper: function() {}
 });
 
 QUnit.test( "keys", function( assert ) {
-	assert.expect( 2 );
+	assert.expect( 1 );
 	this.contextTest = true;
 });
 
@@ -73,7 +57,7 @@ QUnit.test( "afterEach must be called after test ended", function( assert ) {
 	setTimeout(function() {
 		testContext.state = true;
 		QUnit.start();
-	}, 13 );
+	});
 });
 
 QUnit.test( "parameter passed to stop increments semaphore n times", function( assert ) {
@@ -83,11 +67,11 @@ QUnit.test( "parameter passed to stop increments semaphore n times", function( a
 	setTimeout(function() {
 		QUnit.start();
 		QUnit.start();
-	}, 13 );
+	});
 	setTimeout(function() {
 		testContext.state = true;
 		QUnit.start();
-	}, 15 );
+	}, 1 );
 });
 
 QUnit.test( "parameter passed to start decrements semaphore n times", function( assert ) {
@@ -99,7 +83,7 @@ QUnit.test( "parameter passed to start decrements semaphore n times", function( 
 	setTimeout(function() {
 		testContext.state = true;
 		QUnit.start( 3 );
-	}, 18 );
+	});
 });
 
 QUnit.module( "async beforeEach test", {
@@ -108,7 +92,7 @@ QUnit.module( "async beforeEach test", {
 		setTimeout(function() {
 			assert.ok( true );
 			QUnit.start();
-		}, 500 );
+		});
 	}
 });
 
@@ -124,7 +108,7 @@ QUnit.module( "async afterEach test", {
 		setTimeout(function() {
 			assert.ok( true );
 			QUnit.start();
-		}, 500 );
+		});
 	}
 });
 
@@ -135,65 +119,20 @@ QUnit.asyncTest( "module with async afterEach", function( assert ) {
 });
 
 QUnit.module( "save scope", {
-	beforeEach: function() {
+	foo: "foo",
+	beforeEach: function( assert ) {
+		assert.deepEqual( this.foo, "foo" );
 		this.foo = "bar";
 	},
 	afterEach: function( assert ) {
-		assert.deepEqual( this.foo, "bar" );
+		assert.deepEqual( this.foo, "foobar" );
 	}
 });
 
 QUnit.test( "scope check", function( assert ) {
-	assert.expect( 2 );
+	assert.expect( 3 );
 	assert.deepEqual( this.foo, "bar" );
-});
-
-QUnit.module( "simple testEnvironment setup", {
-	foo: "bar",
-	// example of meta-data
-	bugid: "#5311"
-});
-
-QUnit.test( "scope check", function( assert ) {
-	assert.deepEqual( this.foo, "bar" );
-});
-
-QUnit.test( "modify testEnvironment", function( assert ) {
-	assert.expect( 0 );
-	this.foo = "hamster";
-});
-
-QUnit.test( "testEnvironment reset for next test", function( assert ) {
-	assert.deepEqual( this.foo, "bar" );
-});
-
-QUnit.module( "testEnvironment with object", {
-	options: {
-		recipe: "soup",
-		ingredients: [ "hamster", "onions" ]
-	}
-});
-
-QUnit.test( "scope check", function( assert ) {
-	assert.deepEqual( this.options, {
-		recipe: "soup",
-		ingredients: [ "hamster", "onions" ]
-	});
-});
-
-QUnit.test( "modify testEnvironment", function( assert ) {
-	assert.expect( 0 );
-
-	// since we only do a shallow copy, nested children of testEnvironment can be modified
-	// and survice
-	this.options.ingredients.push( "carrots" );
-});
-
-QUnit.test( "testEnvironment reset for next test", function( assert ) {
-	assert.deepEqual( this.options, {
-		recipe: "soup",
-		ingredients: [ "hamster", "onions", "carrots" ]
-	}, "Is this a bug or a feature? Could do a deep copy" );
+	this.foo = "foobar";
 });
 
 QUnit.module( "Deprecated setup/teardown", {

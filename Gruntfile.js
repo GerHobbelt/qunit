@@ -34,7 +34,6 @@ grunt.initConfig({
 			src: [
 				"src/intro.js",
 				"src/core.js",
-				"src/suite.js",
 				"src/test.js",
 				"src/assert.js",
 				"src/equiv.js",
@@ -77,8 +76,9 @@ grunt.initConfig({
 	search: {
 		options: {
 
-			// Ensure that the only HTML entities used are those with a special status in XHTML and that
-			// any common singleton/empty HTML elements end with the XHTML-compliant "/>" rather than ">"
+			// Ensure that the only HTML entities used are those with a special status in XHTML
+			// and that any common singleton/empty HTML elements end with the XHTML-compliant
+			// "/>"rather than ">"
 			searchString: /(&(?!gt|lt|amp|quot)[A-Za-z0-9]+;|<(?:hr|HR|br|BR|input|INPUT)(?![^>]*\/>)(?:\s+[^>]*)?>)/g,
 			logFormat: "console",
 			failOnMatch: true
@@ -103,8 +103,6 @@ grunt.initConfig({
 		},
 		qunit: [
 			"test/index.html",
-			"test/suitesOrder.html",
-			"test/suites.html",
 			"test/autostart.html",
 			"test/startError.html",
 			"test/logs.html",
@@ -129,7 +127,9 @@ grunt.initConfig({
 			".jshintrc",
 			"*.js",
 			"build/*.js",
-			"{src,test}/**/*.js"
+			"{src,test,external,reporter}/**/*.js",
+			"src/qunit.css",
+			"test/**/*.html"
 		],
 		tasks: "default"
 	}
@@ -150,7 +150,7 @@ grunt.registerTask( "testswarm", function( commit, configFile, projectName, brow
 	}
 	timeout = timeout || 1000 * 60 * 15;
 
-	[ "index", "suitesOrder", "suites", "autostart", "startError", "setTimeout" ]
+	[ "index", "autostart", "startError", "setTimeout" ]
 		.forEach(function( suite ) {
 			runs[ suite ] = config.testUrl + commit + "/test/" + suite + ".html";
 		});
@@ -219,6 +219,7 @@ grunt.registerTask( "test-on-node", function() {
 
 	require( "./test/logs" );
 	require( "./test/test" );
+	require( "./test/assert" );
 	require( "./test/async" );
 	require( "./test/promise" );
 	require( "./test/modules" );

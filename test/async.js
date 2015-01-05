@@ -366,7 +366,8 @@ QUnit.test( "multiple `done` calls, final `done` is called BEFORE assertion", fu
 	}, 13 );
 });
 
-QUnit.test( "cannot allow assertions between first `done` call and second `assert.async` call", function( assert ) {
+QUnit.test( "cannot allow assertions between first `done` call and second `assert.async` call",
+		function( assert ) {
 	var done2,
 		testContext = this,
 		done1 = assert.async();
@@ -390,7 +391,7 @@ QUnit.test( "cannot allow assertions between first `done` call and second `asser
 	}, 13 );
 });
 
-QUnit.module( "assertions after final assert.async callback in beforeEach fail but allow other phases to run", {
+QUnit.module( "assert after last done in beforeEach fail, but allow other phases to run", {
 	beforeEach: function( assert ) {
 		_setupForFailingAssertionsAfterAsyncDone.call( this, assert );
 
@@ -410,11 +411,11 @@ QUnit.module( "assertions after final assert.async callback in beforeEach fail b
 	}
 });
 
-QUnit.test( "beforeEach will fail but test and afterTeach will still run", function( assert ) {
+QUnit.test( "beforeEach will fail but test and afterEach will still run", function( assert ) {
 	assert.ok( true, "This assertion should still run in the test callback" );
 });
 
-QUnit.module( "assertions after final assert.async callback in test callback fail but allow other phases to run", {
+QUnit.module( "assert after last done in test fail, but allow other phases to run", {
 	beforeEach: function( assert ) {
 		_setupForFailingAssertionsAfterAsyncDone.call( this, assert );
 
@@ -427,7 +428,7 @@ QUnit.module( "assertions after final assert.async callback in test callback fai
 	}
 });
 
-QUnit.test( "test callback will fail but beforeEach and afterEach will still run", function( assert ) {
+QUnit.test( "test will fail, but beforeEach and afterEach will still run", function( assert ) {
 	this._assertCatch(function() {
 		assert.async()();
 
@@ -437,7 +438,7 @@ QUnit.test( "test callback will fail but beforeEach and afterEach will still run
 	});
 });
 
-QUnit.module( "assertions after final assert.async callback in afterEach fail but allow other phases to run", {
+QUnit.module( "assert after last done in afterEach fail, but allow other phases to run", {
 	beforeEach: function( assert ) {
 		_setupForFailingAssertionsAfterAsyncDone.call( this, assert );
 

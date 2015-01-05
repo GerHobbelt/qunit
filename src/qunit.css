@@ -2,7 +2,7 @@
  * QUnit @VERSION
  * http://qunitjs.com/
  *
- * Copyright 2014 jQuery Foundation and other contributors
+ * Copyright jQuery Foundation and other contributors
  * Released under the MIT license
  * http://jquery.org/license
  *
@@ -77,6 +77,18 @@
 
 #qunit-modulefilter-container {
 	float: right;
+	padding: 0.2em;
+}
+
+.qunit-url-config {
+	display: inline-block;
+	padding: 0.1em;
+}
+
+.qunit-filter {
+	display: block;
+	float: right;
+	margin-left: 1em;
 }
 
 /** Tests: Pass/Fail */
@@ -91,7 +103,19 @@
 	list-style-position: inside;
 }
 
-#qunit-tests.hidepass li.pass, #qunit-tests.hidepass li.running  {
+#qunit-tests > li {
+	display: none;
+}
+
+#qunit-tests li.running,
+#qunit-tests li.pass,
+#qunit-tests li.fail,
+#qunit-tests li.skipped {
+	display: list-item;
+}
+
+#qunit-tests.hidepass li.running,
+#qunit-tests.hidepass li.pass {
 	display: none;
 }
 

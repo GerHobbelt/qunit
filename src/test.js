@@ -1,15 +1,28 @@
 function Test( settings ) {
+	var i, l;
+
 	++Test.count;
 
 	extend( this, settings );
 	this.assertions = [];
 	this.semaphore = 0;
 	this.usedAsync = false;
-	this.module = currentSuite.getFullName() || currentModuleName;
-	this.suite = currentSuite;
-	this.moduleTestEnvironment = config.currentModuleTestEnvironment;
+	this.module = config.currentModule;
 	this.stack = sourceFromStacktrace( 3, true );
-	this.testId = generateHash( this.module, this.testName );
+
+	// Register unique strings
+	for ( i = 0, l = this.module.tests; i < l.length; i++ ) {
+		if ( this.module.tests[ i ].name === this.testName ) {
+			this.testName += " ";
+		}
+	}
+
+	this.testId = generateHash( this.module.name, this.testName );
+
+	this.module.tests.push({
+		name: this.testName,
+		testId: this.testId
+	});
 
 	if ( settings.skip ) {
 
@@ -39,7 +52,8 @@ Test.prototype = {
 		) {
 			if ( hasOwn.call( config, "previousModule" ) ) {
 				runLoggingCallbacks( "moduleDone", {
-					name: config.previousModule,
+					name: config.previousModule.name,
+					tests: config.previousModule.tests,
 					failed: config.moduleStats.bad,
 					passed: config.moduleStats.all - config.moduleStats.bad,
 					total: config.moduleStats.all,
@@ -49,26 +63,21 @@ Test.prototype = {
 			config.previousModule = this.module;
 			config.moduleStats = { all: 0, bad: 0, started: now() };
 			runLoggingCallbacks( "moduleStart", {
-				name: this.module
+				name: this.module.name,
+				tests: this.module.tests
 			});
 		}
 
 		config.current = this;
 
-		// For suite-based tests, we always want this to start empty
-		this.testEnvironment = {};
-
-		// For module-based tests, copy over the module's environment
-		if ( this.suite.parent == null && this.module ) {
-			extend( this.testEnvironment, this.moduleTestEnvironment );
-			delete this.testEnvironment.beforeEach;
-			delete this.testEnvironment.afterEach;
-		}
+		this.testEnvironment = extend( {}, this.module.testEnvironment );
+		delete this.testEnvironment.beforeEach;
+		delete this.testEnvironment.afterEach;
 
 		this.started = now();
 		runLoggingCallbacks( "testStart", {
 			name: this.testName,
-			module: this.module,
+			module: this.module.name,
 			testId: this.testId
 		});
 
@@ -98,7 +107,8 @@ Test.prototype = {
 			promise = this.callback.call( this.testEnvironment, this.assert );
 			this.resolvePromise( promise );
 		} catch ( e ) {
-			this.pushFailure( "Died on test #" + ( this.assertions.length + 1 ) + " " + this.stack + ": " + ( e.message || e ), extractStacktrace( e, 0, true ) );
+			this.pushFailure( "Died on test #" + ( this.assertions.length + 1 ) + " " +
+				this.stack + ": " + ( e.message || e ), extractStacktrace( e, 0, true ) );
 
 			// else next test will carry the responsibility
 			saveGlobal();
@@ -128,33 +138,24 @@ Test.prototype = {
 				promise = hook.call( test.testEnvironment, test.assert );
 				test.resolvePromise( promise, hookName );
 			} catch ( error ) {
-				test.pushFailure( hookName + " failed on " + test.testName + ": " + ( error.message || error ), extractStacktrace( error, 0, true ) );
+				test.pushFailure( hookName + " failed on " + test.testName + ": " +
+					( error.message || error ), extractStacktrace( error, 0, true ) );
 			}
 		};
 	},
 
+	// Currently only used for module level hooks, can be used to add global level ones
 	hooks: function( handler ) {
-		var i, len, suiteHooks,
-			hooks = [];
+		var hooks = [];
 
-		// Hooks are also ignored on skipped tests
+		// Hooks are ignored on skipped tests
 		if ( this.skip ) {
 			return hooks;
 		}
 
-		if ( QUnit.objectType( config[ handler ] ) === "function" ) {
-			hooks.push( this.queueHook( config[ handler ], handler ) );
-		}
-
-		if ( this.suite ) {
-			suiteHooks = this.suite.hooks( handler );
-			for ( i = 0, len = suiteHooks.length; i < len; i++ ) {
-				hooks.push( this.queueHook( suiteHooks[ i ], handler ) );
-			}
-		}
-
-		if ( this.moduleTestEnvironment && QUnit.objectType( this.moduleTestEnvironment[ handler ] ) === "function" ) {
-			hooks.push( this.queueHook( this.moduleTestEnvironment[ handler ], handler ) );
+		if ( this.module.testEnvironment &&
+				QUnit.objectType( this.module.testEnvironment[ handler ] ) === "function" ) {
+			hooks.push( this.queueHook( this.module.testEnvironment[ handler ], handler ) );
 		}
 
 		return hooks;
@@ -163,11 +164,14 @@ Test.prototype = {
 	finish: function() {
 		config.current = this;
 		if ( config.requireExpects && this.expected === null ) {
-			this.pushFailure( "Expected number of assertions to be defined, but expect() was not called.", this.stack );
+			this.pushFailure( "Expected number of assertions to be defined, but expect() was " +
+				"not called.", this.stack );
 		} else if ( this.expected !== null && this.expected !== this.assertions.length ) {
-			this.pushFailure( "Expected " + this.expected + " assertions, but " + this.assertions.length + " were run", this.stack );
+			this.pushFailure( "Expected " + this.expected + " assertions, but " +
+				this.assertions.length + " were run", this.stack );
 		} else if ( this.expected === null && !this.assertions.length ) {
-			this.pushFailure( "Expected at least one assertion, but none were run - call expect(0) to accept zero assertions.", this.stack );
+			this.pushFailure( "Expected at least one assertion, but none were run - call " +
+				"expect(0) to accept zero assertions.", this.stack );
 		}
 
 		var i,
@@ -187,7 +191,7 @@ Test.prototype = {
 
 		runLoggingCallbacks( "testDone", {
 			name: this.testName,
-			module: this.module,
+			module: this.module.name,
 			skipped: !!this.skip,
 			failed: bad,
 			passed: this.assertions.length - bad,
@@ -201,6 +205,11 @@ Test.prototype = {
 			// DEPRECATED: this property will be removed in 2.0.0, use runtime instead
 			duration: this.runtime
 		});
+
+		// QUnit.reset() is deprecated and will be replaced for a new
+		// fixture reset function on QUnit 2.0/2.1.
+		// It's still called here for backwards compatibility handling
+		QUnit.reset();
 
 		config.current = undefined;
 	},
@@ -241,7 +250,7 @@ Test.prototype = {
 		// `bad` initialized at top of scope
 		// defer when previous test run passed, if storage is available
 		bad = QUnit.config.reorder && defined.sessionStorage &&
-				+sessionStorage.getItem( "qunit-test-" + this.module + "-" + this.testName );
+				+sessionStorage.getItem( "qunit-test-" + this.module.name + "-" + this.testName );
 
 		if ( bad ) {
 			run();
@@ -253,7 +262,7 @@ Test.prototype = {
 	push: function( result, actual, expected, message ) {
 		var source,
 			details = {
-				module: this.module,
+				module: this.module.name,
 				name: this.testName,
 				result: result,
 				message: message,
@@ -281,11 +290,12 @@ Test.prototype = {
 
 	pushFailure: function( message, source, actual ) {
 		if ( !this instanceof Test ) {
-			throw new Error( "pushFailure() assertion outside test context, was " + sourceFromStacktrace( 2 ) );
+			throw new Error( "pushFailure() assertion outside test context, was " +
+				sourceFromStacktrace( 2 ) );
 		}
 
 		var details = {
-				module: this.module,
+				module: this.module.name,
 				name: this.testName,
 				result: false,
 				message: message || "error",
@@ -317,7 +327,8 @@ Test.prototype = {
 					promise,
 					QUnit.start,
 					function( error ) {
-						message = "Promise rejected " + ( !phase ? "during" : phase.replace( /Each$/, "" ) ) +
+						message = "Promise rejected " +
+							( !phase ? "during" : phase.replace( /Each$/, "" ) ) +
 							" " + test.testName + ": " + ( error.message || error );
 						test.pushFailure( message, extractStacktrace( error, 0, true ) );
 
@@ -334,9 +345,9 @@ Test.prototype = {
 
 	valid: function() {
 		var include,
-			filter = config.filter && config.filter.toLowerCase(),
-			module = config.module && config.module.toLowerCase(),
-			fullName = ( this.module + ": " + this.testName ).toLowerCase();
+			filter = config.filter,
+			module = QUnit.urlParams.module && QUnit.urlParams.module.toLowerCase(),
+			fullName = ( this.module.name + ": " + this.testName ).toLowerCase();
 
 		// Internally-generated tests are always valid
 		if ( this.callback && this.callback.validTest ) {
@@ -347,7 +358,7 @@ Test.prototype = {
 			return false;
 		}
 
-		if ( module && ( !this.module || this.module.toLowerCase() !== module ) ) {
+		if ( module && ( !this.module.name || this.module.name.toLowerCase() !== module ) ) {
 			return false;
 		}
 
@@ -357,7 +368,7 @@ Test.prototype = {
 
 		include = filter.charAt( 0 ) !== "!";
 		if ( !include ) {
-			filter = filter.slice( 1 );
+			filter = filter.toLowerCase().slice( 1 );
 		}
 
 		// If the filter matches, we need to honour include
@@ -371,9 +382,32 @@ Test.prototype = {
 
 };
 
+// Resets the test setup. Useful for tests that modify the DOM.
+/*
+DEPRECATED: Use multiple tests instead of resetting inside a test.
+Use testStart or testDone for custom cleanup.
+This method will throw an error in 2.0, and will be removed in 2.1
+*/
+QUnit.reset = function() {
+
+	// Return on non-browser environments
+	// This is necessary to not break on node tests
+	if ( typeof window === "undefined" ) {
+		return;
+	}
+
+	var fixture = defined.document && document.getElementById &&
+			document.getElementById( "qunit-fixture" );
+
+	if ( fixture ) {
+		fixture.innerHTML = config.fixture;
+	}
+};
+
 QUnit.pushFailure = function() {
 	if ( !QUnit.config.current ) {
-		throw new Error( "pushFailure() assertion outside test context, in " + sourceFromStacktrace( 2 ) );
+		throw new Error( "pushFailure() assertion outside test context, in " +
+			sourceFromStacktrace( 2, true ) );
 	}
 
 	// Gets current test obj
@@ -400,7 +434,7 @@ function generateHash( module, testName ) {
 	// strictly necessary but increases user understanding that the id is a SHA-like hash
 	hex = ( 0x100000000 + hash ).toString( 16 );
 	if ( hex.length < 8 ) {
-	    hex = "0000000" + hex;
+		hex = "0000000" + hex;
 	}
 
 	return hex.slice( -8 );
