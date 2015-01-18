@@ -2,3 +2,8 @@ dist
 node_modules
 build/report
 browserstack-run.pid
+
+# analyze_github script cache:
+__forks.info__/
+__forks__.bulk_dump
+
