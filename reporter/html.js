@@ -384,7 +384,7 @@ function toolbarModuleFilter() {
 		moduleFilter = document.createElement( "span" ),
 		moduleFilterHtml = toolbarModuleFilterHtml();
 
-	if ( !moduleFilterHtml ) {
+	if ( !toolbar || !moduleFilterHtml ) {
 		return false;
 	}
 
@@ -405,14 +405,21 @@ function appendToolbar() {
 	}
 }
 
+function appendHeader() {
+	var header = id( "qunit-header" );
+
+	if ( header ) {
+		header.innerHTML = "<a href='" +
+			setUrl({ filter: undefined, module: undefined, testId: undefined }) +
+			"'>" + header.innerHTML + "</a> ";
+	}
+}
+
 function appendBanner() {
 	var banner = id( "qunit-banner" );
 
 	if ( banner ) {
 		banner.className = "";
-		banner.innerHTML = "<a href='" +
-			setUrl({ filter: undefined, module: undefined, testId: undefined }) +
-			"'>" + banner.innerHTML + "</a> ";
 	}
 }
 
@@ -444,7 +451,8 @@ function storeFixture() {
 function appendUserAgent() {
 	var userAgent = id( "qunit-userAgent" );
 	if ( userAgent ) {
-		userAgent.innerHTML = navigator.userAgent;
+		userAgent.innerHTML = "";
+		userAgent.appendChild( document.createTextNode( navigator.userAgent ) );
 	}
 }
 
@@ -501,17 +509,16 @@ QUnit.begin(function( details ) {
 	// Fixture is the only one necessary to run without the #qunit element
 	storeFixture();
 
-	if ( !qunit ) {
-		return;
+	if ( qunit ) {
+		qunit.innerHTML =
+			"<h1 id='qunit-header'>" + escapeText( document.title ) + "</h1>" +
+			"<h2 id='qunit-banner'></h2>" +
+			"<div id='qunit-testrunner-toolbar'></div>" +
+			"<h2 id='qunit-userAgent'></h2>" +
+			"<ol id='qunit-tests'></ol>";
 	}
 
-	qunit.innerHTML =
-		"<h1 id='qunit-header'>" + escapeText( document.title ) + "</h1>" +
-		"<h2 id='qunit-banner'></h2>" +
-		"<div id='qunit-testrunner-toolbar'></div>" +
-		"<h2 id='qunit-userAgent'></h2>" +
-		"<ol id='qunit-tests'></ol>";
-
+	appendHeader();
 	appendBanner();
 	appendTestResults();
 	appendUserAgent();
@@ -519,7 +526,7 @@ QUnit.begin(function( details ) {
 	appendTestsList( details.modules );
 	toolbarModuleFilter();
 
-	if ( config.hidepassed ) {
+	if ( qunit && config.hidepassed ) {
 		addClass( qunit.lastChild, "hidepass" );
 	}
 });
