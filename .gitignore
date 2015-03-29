@@ -2,6 +2,7 @@ dist
 node_modules
 build/report
 browserstack-run.pid
+BrowserStackLocal
 
 # analyze_github script cache:
 __forks.info__/
