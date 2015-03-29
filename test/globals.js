@@ -27,6 +27,10 @@ function checkExported( assert, methods, isAssertion ) {
 	}
 }
 
+QUnit.test( "QUnit object", function( assert ) {
+	assert.ok( QUnit instanceof QUnit.constructor, "Global QUnit built from its own constructor" );
+});
+
 QUnit.test( "QUnit exported methods", function( assert ) {
 	var globals = [
 			"test", "asyncTest", "module",
