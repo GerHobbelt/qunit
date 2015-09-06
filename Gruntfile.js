@@ -33,14 +33,20 @@ grunt.initConfig({
 			},
 			src: [
 				"src/intro.js",
+				"src/core/initialize.js",
+				"src/core/utilities.js",
+				"src/core/stacktrace.js",
+				"src/core/config.js",
+				"src/core/logging.js",
+				"src/core/onerror.js",
 				"src/core.js",
 				"src/test.js",
 				"src/assert.js",
 				"src/equiv.js",
 				"src/dump.js",
 				"src/export.js",
+				"src/diff.js",
 				"src/outro.js",
-				"external/jsdiff/jsdiff.js",
 				"reporter/html.js"
 			],
 			dest: "dist/qunit.js"
@@ -70,7 +76,7 @@ grunt.initConfig({
 		},
 		all: [
 			"<%= jshint.all %>",
-			"!test/deepEqual.js"
+			"!test/main/deepEqual.js"
 		]
 	},
 	search: {
@@ -85,7 +91,6 @@ grunt.initConfig({
 		},
 		xhtml: [
 			"src/**/*.js",
-			"external/**/*.js",
 			"reporter/**/*.js"
 		]
 	},
@@ -107,8 +112,10 @@ grunt.initConfig({
 			"test/startError.html",
 			"test/logs.html",
 			"test/setTimeout.html",
-			"test/reporter-html-legacy-markup.html",
-			"test/reporter-html-no-qunit-element.html"
+			"test/amd.html",
+			"test/reporter-html/index.html",
+			"test/reporter-html/legacy-markup.html",
+			"test/reporter-html/no-qunit-element.html"
 		]
 	},
 	coveralls: {
@@ -129,55 +136,12 @@ grunt.initConfig({
 			".jshintrc",
 			"*.js",
 			"build/*.js",
-			"{src,test,external,reporter}/**/*.js",
+			"{src,test,reporter}/**/*.js",
 			"src/qunit.css",
 			"test/**/*.html"
 		],
 		tasks: "default"
 	}
-});
-
-grunt.registerTask( "testswarm", function( commit, configFile, projectName, browserSets, timeout ) {
-	var config,
-		testswarm = require( "testswarm" ),
-		runs = {},
-		done = this.async();
-
-	projectName = projectName || "qunit";
-	config = grunt.file.readJSON( configFile )[ projectName ];
-	browserSets = browserSets || config.browserSets;
-	if ( browserSets[ 0 ] === "[" ) {
-		// We got an array, parse it
-		browserSets = JSON.parse( browserSets );
-	}
-	timeout = timeout || 1000 * 60 * 15;
-
-	[ "index", "autostart", "startError", "setTimeout" ]
-		.forEach(function( suite ) {
-			runs[ suite ] = config.testUrl + commit + "/test/" + suite + ".html";
-		});
-
-	testswarm
-		.createClient({
-			url: config.swarmUrl
-		})
-		.addReporter( testswarm.reporters.cli )
-		.auth({
-			id: config.authUsername,
-			token: config.authToken
-		})
-		.addjob({
-			name: "Commit <a href='https://github.com/jquery/qunit/commit/" + commit + "'>" +
-				commit.substr( 0, 10 ) + "</a>",
-			runs: runs,
-			browserSets: browserSets,
-			timeout: timeout
-		}, function( err, passed ) {
-			if ( err ) {
-				grunt.log.error( err );
-			}
-			done( passed );
-		});
 });
 
 // TODO: Extract this task later, if feasible
@@ -187,6 +151,8 @@ grunt.registerTask( "test-on-node", function() {
 		runDone = false,
 		done = this.async(),
 		QUnit = require( "./dist/qunit" );
+
+	global.QUnit = QUnit;
 
 	QUnit.testStart(function() {
 		testActive = true;
@@ -220,13 +186,13 @@ grunt.registerTask( "test-on-node", function() {
 	QUnit.config.autorun = false;
 
 	require( "./test/logs" );
-	require( "./test/test" );
-	require( "./test/assert" );
-	require( "./test/async" );
-	require( "./test/promise" );
-	require( "./test/modules" );
-	require( "./test/deepEqual" );
-	require( "./test/globals" );
+	require( "./test/main/test" );
+	require( "./test/main/assert" );
+	require( "./test/main/async" );
+	require( "./test/main/promise" );
+	require( "./test/main/modules" );
+	require( "./test/main/deepEqual" );
+	require( "./test/main/stack" );
 	require( "./test/globals-node" );
 
 	QUnit.load();

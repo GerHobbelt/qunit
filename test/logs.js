@@ -114,6 +114,7 @@ QUnit.test( module1Test1.name, function( assert ) {
 		message: "log runtime was a reasonable number",
 		actual: true,
 		expected: true,
+		negative: false,
 		testId: module1Test1.testId
 	}, "log context after equal(actual, expected, message)" );
 
@@ -127,6 +128,7 @@ QUnit.test( module1Test1.name, function( assert ) {
 		message: undefined,
 		actual: "foo",
 		expected: "foo",
+		negative: false,
 		testId: module1Test1.testId
 	}, "log context after equal(actual, expected)" );
 
@@ -140,6 +142,7 @@ QUnit.test( module1Test1.name, function( assert ) {
 		message: "ok(true, message)",
 		actual: true,
 		expected: true,
+		negative: false,
 		testId: module1Test1.testId
 	}, "log context after ok(true, message)" );
 
@@ -175,10 +178,16 @@ QUnit.test( module1Test2.name, function( assert ) {
 	// TODO: more tests for testDoneContext.assertions
 
 	delete testDoneContext.runtime;
+
 	// DEPRECATED: remove this delete when removing the duration property
 	delete testDoneContext.duration;
+
 	// Delete testDoneContext.assertions so we can easily jump to next assertion
 	delete testDoneContext.assertions;
+
+	// Delete testDoneContext.source
+	delete testDoneContext.source;
+
 	assert.deepEqual( testDoneContext, {
 		module: module1Context.name,
 		name: module1Test1.name,
@@ -259,6 +268,7 @@ QUnit.test( module2Test4.name, function( assert ) {
 
 	delete testDoneContext.runtime;
 	delete testDoneContext.duration;
+	delete testDoneContext.source;
 
 	assert.deepEqual( testDoneContext, {
 		assertions: [],

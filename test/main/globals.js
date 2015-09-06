@@ -1,4 +1,4 @@
-/*global ok: false, equal: false */
+/*global ok: false, equal: false, throws: false */
 (function( window ) {
 
 QUnit.module( "globals" );
@@ -45,16 +45,25 @@ QUnit.test( "QUnit exported methods", function( assert ) {
 
 // Test deprecated exported Assert methods
 QUnit.test( "Exported assertions", function() {
-	QUnit.expect( 6 );
+	QUnit.expect( 9 );
 
 	QUnit.ok( true );
 	QUnit.equal( 2, 2 );
+	QUnit.throws(function() {
+		throw "error";
+	});
 
 	ok( true );
 	equal( 2, 2 );
+	throws(function() {
+		throw "error";
+	});
 
 	QUnit.assert.ok( true );
 	QUnit.assert.equal( 2, 2 );
+	QUnit.assert.throws(function() {
+		throw "error";
+	});
 });
 
 // Get a reference to the global object, like window in browsers
