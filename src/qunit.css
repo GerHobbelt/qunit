@@ -87,10 +87,11 @@
 }
 
 #qunit-modulefilter-search {
-	width: 400px;
+	width: 406px;
 }
 
 #qunit-modulefilter-dropdown-container {
+	z-index: 10000;
 	color: black;
 	margin-left: 53px;
 	position:absolute;
@@ -118,6 +119,10 @@
 	text-overflow: ellipsis;
 }
 
+#qunit-modulefilter-dropdown-list hr {
+	margin-top: 4px;
+	margin-bottom: 4px;
+}
 
 #qunit-modulefilter-dropdown-list label {
 	display: inline;
