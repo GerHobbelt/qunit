@@ -5,3 +5,4 @@
 *.js eol=lf
 *.json eol=lf
 *.html eol=lf
+bin/qunit eol=lf

@@ -23,14 +23,14 @@ export function extractStacktrace( e, offset, produceStack ) {
 				include.push( stack[ i ] );
 			}
 			if ( include.length ) {
-				if (!produceStack) {
+				if ( !produceStack ) {
 					return include.join( "\n" );
 				} else {
 					return include;
 				}
 			}
 		}
-		if (!produceStack) {
+		if ( !produceStack ) {
 			return stack[ offset ];
 		} else {
 			return stack.slice( offset );
