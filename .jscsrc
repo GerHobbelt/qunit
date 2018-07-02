@@ -1,5 +1,0 @@
-{
-	"preset": "jquery",
-    "maximumLineLength": 140,
-	"requireMultipleVarDecl": null
-}

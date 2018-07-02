@@ -1,6 +1,9 @@
+QUnit.config.reorder = false;
+
 var totalTests, moduleContext, moduleDoneContext, testContext, testDoneContext, logContext,
 	testAutorun, beginModules,
-	module1Test1, module1Test2, module2Test1, module2Test2, module2Test3, module2Test4,
+	module1Test1, module1Test2, module2Test1, module2Test2,
+	module2Test3, module2Test4, module2Test5, module2Test6,
 	begin = 0,
 	moduleStart = 0,
 	moduleDone = 0,
@@ -10,68 +13,84 @@ var totalTests, moduleContext, moduleDoneContext, testContext, testDoneContext, 
 	module1Context = {
 		name: "logs1",
 		tests: [
-			(module1Test1 = {
+			( module1Test1 = {
 				"name": "test1",
-				"testId": "646e9e25"
-			}),
-			(module1Test2 = {
+				"testId": "646e9e25",
+				"skip": false
+			} ),
+			( module1Test2 = {
 				"name": "test2",
-				"testId": "646e9e26"
-			})
+				"testId": "646e9e26",
+				"skip": false
+			} )
 		]
 	},
 	module2Context = {
 		name: "logs2",
 		tests: [
-			(module2Test1 = {
+			( module2Test1 = {
 				"name": "test1",
-				"testId": "9954d966"
-			}),
-			(module2Test2 = {
+				"testId": "9954d966",
+				"skip": false
+			} ),
+			( module2Test2 = {
 				"name": "test2",
-				"testId": "9954d967"
-			}),
-			(module2Test3 = {
+				"testId": "9954d967",
+				"skip": false
+			} ),
+			( module2Test3 = {
 				"name": "a skipped test",
-				"testId": "3e797d3a"
-			}),
-			(module2Test4 = {
+				"testId": "3e797d3a",
+				"skip": true
+			} ),
+			( module2Test4 = {
 				"name": "test the log for the skipped test",
-				"testId": "d3266148"
-			})
+				"testId": "d3266148",
+				"skip": false
+			} ),
+			( module2Test5 = {
+				"name": "a todo test",
+				"testId": "77a47174",
+				"skip": false
+			} ),
+			( module2Test6 = {
+				"name": "test the log for the todo test",
+				"testId": "5f5ab826",
+				"skip": false
+			} )
 		]
 	};
 
-QUnit.begin(function( args ) {
+QUnit.begin( function( args ) {
 	totalTests = args.totalTests;
 	beginModules = args.modules;
 	begin++;
-});
+} );
 
-QUnit.moduleStart(function( context ) {
+QUnit.moduleStart( function( context ) {
 	moduleStart++;
 	moduleContext = context;
-});
+} );
 
-QUnit.moduleDone(function( context ) {
+QUnit.moduleDone( function( context ) {
 	moduleDone++;
 	moduleDoneContext = context;
-});
+} );
 
-QUnit.testStart(function( context ) {
+QUnit.testStart( function( context ) {
 	testStart++;
 	testContext = context;
-});
+} );
 
-QUnit.testDone(function( context ) {
+QUnit.testDone( function( context ) {
 	testDone++;
 	testDoneContext = context;
-});
+} );
 
-QUnit.log(function( context ) {
+QUnit.log( function( context ) {
 	log++;
 	logContext = context;
-});
+} );
 
 QUnit.module( module1Context.name );
 
@@ -115,7 +134,8 @@ QUnit.test( module1Test1.name, function( assert ) {
 		actual: true,
 		expected: true,
 		negative: false,
-		testId: module1Test1.testId
+		testId: module1Test1.testId,
+		todo: false
 	}, "log context after equal(actual, expected, message)" );
 
 	assert.equal( "foo", "foo" );
@@ -129,7 +149,8 @@ QUnit.test( module1Test1.name, function( assert ) {
 		actual: "foo",
 		expected: "foo",
 		negative: false,
-		testId: module1Test1.testId
+		testId: module1Test1.testId,
+		todo: false
 	}, "log context after equal(actual, expected)" );
 
 	assert.ok( true, "ok(true, message)" );
@@ -143,21 +164,23 @@ QUnit.test( module1Test1.name, function( assert ) {
 		actual: true,
 		expected: true,
 		negative: false,
-		testId: module1Test1.testId
+		testId: module1Test1.testId,
+		todo: false
 	}, "log context after ok(true, message)" );
 
 	assert.strictEqual( testDoneContext, undefined, "testDone context" );
 	assert.deepEqual( testContext, {
 		module: module1Context.name,
 		name: module1Test1.name,
-		testId: module1Test1.testId
+		testId: module1Test1.testId,
+		previousFailure: false
 	}, "test context" );
 
 	assert.strictEqual( moduleDoneContext, undefined, "moduleDone context" );
 	assert.deepEqual( moduleContext, module1Context, "module context" );
 
 	assert.equal( log, 17, "QUnit.log calls" );
-});
+} );
 
 QUnit.test( module1Test2.name, function( assert ) {
 	assert.expect( 12 );
@@ -179,9 +202,6 @@ QUnit.test( module1Test2.name, function( assert ) {
 
 	delete testDoneContext.runtime;
 
-	// DEPRECATED: remove this delete when removing the duration property
-	delete testDoneContext.duration;
-
 	// Delete testDoneContext.assertions so we can easily jump to next assertion
 	delete testDoneContext.assertions;
 
@@ -195,18 +215,20 @@ QUnit.test( module1Test2.name, function( assert ) {
 		passed: 18,
 		total: 18,
 		testId: module1Test1.testId,
-		skipped: false
+		skipped: false,
+		todo: false
 	}, "testDone context" );
 	assert.deepEqual( testContext, {
 		module: module1Context.name,
 		name: module1Test2.name,
-		testId: module1Test2.testId
+		testId: module1Test2.testId,
+		previousFailure: false
 	}, "test context" );
 
 	assert.strictEqual( moduleDoneContext, undefined, "moduleDone context" );
 	assert.deepEqual( moduleContext, module1Context, "module context" );
 	assert.equal( log, 29, "QUnit.log calls" );
-});
+} );
 
 QUnit.module( module2Context.name );
 
@@ -221,7 +243,8 @@ QUnit.test( module2Test1.name, function( assert ) {
 	assert.deepEqual( testContext, {
 		module: module2Context.name,
 		name: module2Test1.name,
-		testId: module2Test1.testId
+		testId: module2Test1.testId,
+		previousFailure: false
 	}, "test context" );
 
 	assert.equal(
@@ -241,7 +264,7 @@ QUnit.test( module2Test1.name, function( assert ) {
 	assert.deepEqual( moduleContext, module2Context, "module context" );
 
 	assert.equal( log, 39, "QUnit.log calls" );
-});
+} );
 
 QUnit.test( module2Test2.name, function( assert ) {
 	assert.expect( 8 );
@@ -254,20 +277,19 @@ QUnit.test( module2Test2.name, function( assert ) {
 	assert.deepEqual( testContext, {
 		module: module2Context.name,
 		name: module2Test2.name,
-		testId: module2Test2.testId
+		testId: module2Test2.testId,
+		previousFailure: false
 	}, "test context" );
 	assert.deepEqual( moduleContext, module2Context, "module context" );
 
 	assert.equal( log, 47, "QUnit.log calls" );
-});
+} );
 
 QUnit.skip( module2Test3.name );
 
 QUnit.test( module2Test4.name, function( assert ) {
 	assert.expect( 1 );
 
-	delete testDoneContext.runtime;
-	delete testDoneContext.duration;
 	delete testDoneContext.source;
 
 	assert.deepEqual( testDoneContext, {
@@ -278,13 +300,40 @@ QUnit.test( module2Test4.name, function( assert ) {
 		passed: 0,
 		total: 0,
 		skipped: true,
-		testId: module2Test3.testId
+		todo: false,
+		testId: module2Test3.testId,
+		runtime: 0
 	}, "testDone context" );
-});
+} );
+
+QUnit.todo( module2Test5.name, function( assert ) {
+	assert.ok( false );
+	assert.ok( true );
+} );
+
+QUnit.test( module2Test6.name, function( assert ) {
+	assert.expect( 1 );
+
+	delete testDoneContext.runtime;
+	delete testDoneContext.duration;
+	delete testDoneContext.source;
+	delete testDoneContext.assertions;
+
+	assert.deepEqual( testDoneContext, {
+		module: module2Context.name,
+		name: module2Test5.name,
+		failed: 1,
+		passed: 1,
+		total: 2,
+		skipped: false,
+		todo: true,
+		testId: module2Test5.testId
+	}, "testDone context" );
+} );
 
 testAutorun = true;
 
-QUnit.done(function() {
+QUnit.done( function() {
 
 	if ( !testAutorun ) {
 		return;
@@ -299,34 +348,15 @@ QUnit.done(function() {
 	// the module starts/ends after each test.
 	QUnit.module( "autorun" );
 
-	setTimeout(function() {
+	setTimeout( function() {
 		QUnit.test( "first", function( assert ) {
 			assert.equal( moduleStart, 1, "test started" );
 			assert.equal( moduleDone, 0, "test in progress" );
-		});
+		} );
 
 		QUnit.test( "second", function( assert ) {
 			assert.equal( moduleStart, 2, "test started" );
 			assert.equal( moduleDone, 1, "test in progress" );
-		});
+		} );
 	}, 5000 );
-});
-
-QUnit.module( "deprecated log methods" );
-
-QUnit.test( "QUnit.reset()", function( assert ) {
-
-	// Skip non-browsers
-	if ( typeof window === "undefined" || !window.document ) {
-		assert.expect( 0 );
-		return;
-	}
-
-	var myFixture = document.getElementById( "qunit-fixture" );
-
-	myFixture.innerHTML = "<em>something different from QUnit.config.fixture</em>";
-
-	QUnit.reset();
-
-	assert.strictEqual( myFixture.innerHTML, QUnit.config.fixture, "restores #qunit-fixture" );
-});
+} );

@@ -9,10 +9,9 @@
 	<div id="qunit"></div>
 	<script src="../dist/qunit.js"></script>
 	<script>
-	var beginData,
-		times = {};
+	window.times = {};
 
-	(function() {
+	( function() {
 		var now = Date.now || function() {
 			return new Date().getTime();
 		};
@@ -21,21 +20,21 @@
 		QUnit.config.autostart = false;
 
 		// Mark the current time
-		times.autostartOff = now() + asyncDelay;
+		window.times.autostartOff = now() + asyncDelay;
 
 		// Simulate a delay in loading the tests, as when they are loaded
 		// asynchronously using requirejs, steal, etc.
-		setTimeout(function() {
+		setTimeout( function() {
 			var script = document.createElement( "script" );
 			script.src = "autostart.js";
 			document.getElementsByTagName( "head" )[ 0 ].appendChild( script );
 		}, asyncDelay );
 
-		QUnit.begin(function( data ) {
-			beginData = data;
-			times.runStarted = now();
-		});
-	})();
+		QUnit.begin( function( data ) {
+			window.beginData = data;
+			window.times.runStarted = now();
+		} );
+	}() );
 	</script>
 </body>
 </html>

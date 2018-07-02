@@ -1,204 +1,282 @@
-/*jshint node:true */
+/* eslint-env node */
+
+var path = require( "path" );
+var fs = require( "fs-extra" );
+var semver = require( "semver" );
+
+var instrumentedDir = "build/instrumented";
+var reportDir = "build/report";
+
+var HAS_ASYNC_FUNCTIONS = semver.satisfies( process.version, ">= 7.10" );
+
 module.exports = function( grunt ) {
+	var livereloadPort = grunt.option( "livereload-port" ) || 35729;
 
-require( "load-grunt-tasks" )( grunt );
+	// Load grunt tasks from NPM packages
+	require( "load-grunt-tasks" )( grunt );
 
-function process( code, filepath ) {
-
-	// Make coverage ignore external files
-	if ( filepath.match( /^external\// ) ) {
-		code = "/*istanbul ignore next */\n" + code;
-	}
-
-	return code
+	function preprocess( code ) {
+		return code
 
 		// Embed version
-		.replace( /@VERSION/g, grunt.config( "pkg" ).version )
+			.replace( /@VERSION/g, grunt.config( "pkg" ).version )
 
 		// Embed date (yyyy-mm-ddThh:mmZ)
-		.replace( /@DATE/g, ( new Date() ).toISOString().replace( /:\d+\.\d+Z$/, "Z" ) );
-}
+			.replace( /@DATE/g, ( new Date() ).toISOString().replace( /:\d+\.\d+Z$/, "Z" ) );
+	}
 
-// hack to make grunt-contrib-concat NOT insert CRLF on Windows:
-//     https://github.com/gruntjs/grunt-contrib-concat/issues/105
-grunt.util.linefeed = "\n";
-
-grunt.initConfig({
-	pkg: grunt.file.readJSON( "package.json" ),
-	concat: {
-		"src-js": {
-			options: {
-				process: process,
-				separator: "\n"
-			},
-			src: [
-				"src/intro.js",
-				"src/core/initialize.js",
-				"src/core/utilities.js",
-				"src/core/stacktrace.js",
-				"src/core/config.js",
-				"src/core/logging.js",
-				"src/core/onerror.js",
-				"src/core.js",
-				"src/test.js",
-				"src/assert.js",
-				"src/equiv.js",
-				"src/dump.js",
-				"src/export.js",
-				"src/diff.js",
-				"src/outro.js",
-				"reporter/html.js"
-			],
-			dest: "dist/qunit.js"
-		},
-		"src-css": {
-			options: {
-				process: process,
-				separator: "\n"
-			},
-			src: "src/qunit.css",
-			dest: "dist/qunit.css"
-		}
-	},
-	jshint: {
-		options: {
-			jshintrc: true
-		},
-		all: [
-			"*.js",
-			"{test,dist}/**/*.js",
-			"build/*.js"
-		]
-	},
-	jscs: {
-		options: {
-			config: ".jscsrc"
-		},
-		all: [
-			"<%= jshint.all %>",
-			"!test/main/deepEqual.js"
-		]
-	},
-	search: {
-		options: {
-
-			// Ensure that the only HTML entities used are those with a special status in XHTML
-			// and that any common singleton/empty HTML elements end with the XHTML-compliant
-			// "/>"rather than ">"
-			searchString: /(&(?!gt|lt|amp|quot)[A-Za-z0-9]+;|<(?:hr|HR|br|BR|input|INPUT)(?![^>]*\/>)(?:\s+[^>]*)?>)/g,
-			logFormat: "console",
-			failOnMatch: true
-		},
-		xhtml: [
-			"src/**/*.js",
-			"reporter/**/*.js"
-		]
-	},
-	qunit: {
-		options: {
-			timeout: 30000,
-			"--web-security": "no",
-			coverage: {
-				src: "dist/qunit.js",
-				instrumentedFiles: "temp/",
-				htmlReport: "build/report/coverage",
-				lcovReport: "build/report/lcov",
-				linesThresholdPct: 70
+	grunt.initConfig( {
+		pkg: grunt.file.readJSON( "package.json" ),
+		connect: {
+			server: {
+				options: {
+					port: 8000,
+					base: ".",
+					livereload: livereloadPort
+				}
 			}
 		},
-		qunit: [
-			"test/index.html",
-			"test/autostart.html",
-			"test/startError.html",
-			"test/logs.html",
-			"test/setTimeout.html",
-			"test/amd.html",
-			"test/reporter-html/index.html",
-			"test/reporter-html/legacy-markup.html",
-			"test/reporter-html/no-qunit-element.html"
-		]
-	},
-	coveralls: {
-		options: {
-			force: true
+		copy: {
+			options: { process: preprocess },
+
+			"src-js": {
+				src: "dist/qunit.js",
+				dest: "dist/qunit.js"
+			},
+			"src-css": {
+				src: "src/qunit.css",
+				dest: "dist/qunit.css"
+			},
+
+			// Moves files around during coverage runs
+			"dist-to-tmp": {
+				src: "dist/qunit.js",
+				dest: "dist/qunit.tmp.js"
+			},
+			"instrumented-to-dist": {
+				src: "build/instrumented/dist/qunit.js",
+				dest: "dist/qunit.js"
+			},
+			"tmp-to-dist": {
+				src: "dist/qunit.tmp.js",
+				dest: "dist/qunit.js"
+			}
 		},
-		all: {
-
-			// LCOV coverage file relevant to every target
-			src: "build/report/lcov/lcov.info"
-		}
-	},
-	watch: {
-		options: {
-			atBegin: true
+		rollup: {
+			options: require( "./rollup.config" ),
+			src: {
+				src: "src/qunit.js",
+				dest: "dist/qunit.js"
+			}
 		},
-		files: [
-			".jshintrc",
-			"*.js",
-			"build/*.js",
-			"{src,test,reporter}/**/*.js",
-			"src/qunit.css",
-			"test/**/*.html"
-		],
-		tasks: "default"
-	}
-});
+		eslint: {
+			options: {
+				config: ".eslintrc.json"
+			},
+			js: [
+				"*.js",
+				"bin/qunit",
+				"bin/**/*.js",
+				"reporter/**/*.js",
+				"runner/**/*.js",
+				"src/**/*.js",
 
-// TODO: Extract this task later, if feasible
-// Also spawn a separate process to keep tests atomic
-grunt.registerTask( "test-on-node", function() {
-	var testActive = false,
-		runDone = false,
-		done = this.async(),
-		QUnit = require( "./dist/qunit" );
+				"test/**/*.js",
+				"build/*.js",
+				"build/tasks/**/*.js"
+			],
+			html: {
+				options: {
+					rules: {
+						indent: "off"
+					}
+				},
+				src: [
 
-	global.QUnit = QUnit;
+					// Linting HTML files via eslint-plugin-html
+					"test/**/*.html"
+				]
+			}
+		},
+		search: {
+			options: {
 
-	QUnit.testStart(function() {
-		testActive = true;
-	});
-	QUnit.log(function( details ) {
-		if ( !testActive || details.result ) {
-			return;
+				// Ensure that the only HTML entities used are those with a special status in XHTML
+				// and that any common singleton/empty HTML elements end with the XHTML-compliant
+				// "/>"rather than ">"
+				searchString: /(&(?!gt|lt|amp|quot)[A-Za-z0-9]+;|<(?:hr|HR|br|BR|input|INPUT)(?![^>]*\/>)(?:\s+[^>]*)?>)/g, // eslint-disable-line max-len
+				logFormat: "console",
+				failOnMatch: true
+			},
+			xhtml: [
+				"src/**/*.js",
+				"reporter/**/*.js"
+			]
+		},
+		qunit: {
+			options: {
+				timeout: 30000,
+				"--web-security": "no",
+				inject: [
+					path.resolve( "./build/coverage-bridge.js" ),
+					require.resolve( "grunt-contrib-qunit/phantomjs/bridge" )
+				],
+				urls: [
+					"http://localhost:8000/test/sandboxed-iframe.html"
+				]
+			},
+			qunit: [
+				"test/index.html",
+				"test/autostart.html",
+				"test/startError.html",
+				"test/reorder.html",
+				"test/reorderError1.html",
+				"test/reorderError2.html",
+				"test/callbacks.html",
+				"test/events.html",
+				"test/events-in-test.html",
+				"test/logs.html",
+				"test/setTimeout.html",
+				"test/amd.html",
+				"test/reporter-html/index.html",
+				"test/reporter-html/legacy-markup.html",
+				"test/reporter-html/no-qunit-element.html",
+				"test/reporter-html/single-testid.html",
+				"test/reporter-html/window-onerror.html",
+				"test/reporter-html/window-onerror-preexisting-handler.html",
+				"test/reporter-urlparams.html",
+				"test/moduleId.html",
+				"test/onerror/inside-test.html",
+				"test/onerror/outside-test.html",
+				"test/only.html",
+				"test/seed.html",
+				"test/overload.html",
+				"test/preconfigured.html",
+				"test/regex-filter.html",
+				"test/regex-exclude-filter.html",
+				"test/string-filter.html",
+				"test/module-only.html",
+				"test/module-skip.html",
+				"test/module-todo.html"
+			]
+		},
+		"test-on-node": {
+			files: [
+				"test/logs",
+				"test/main/test",
+				"test/main/assert",
+				"test/main/assert/step",
+				"test/main/assert/timeout",
+				"test/main/async",
+				"test/main/promise",
+				"test/main/modules",
+				"test/main/deepEqual",
+				"test/main/stack",
+				"test/main/utilities",
+				"test/events",
+				"test/events-in-test",
+				"test/onerror/inside-test",
+				"test/onerror/outside-test",
+				"test/only",
+				"test/setTimeout",
+				"test/main/dump",
+				"test/node/storage-1",
+				"test/node/storage-2",
+				"test/module-only",
+				"test/module-skip",
+				"test/module-todo",
+				HAS_ASYNC_FUNCTIONS ? "test/es2017/async-functions" : null
+			].filter( Boolean )
+		},
+		"watch-repeatable": {
+			options: {
+				atBegin: true,
+				spawn: false,
+				interrupt: true
+			},
+			files: [
+				".eslintrc.json",
+				"*.js",
+				"build/*.js",
+				"{src,test,reporter}/**/*.js",
+				"src/qunit.css",
+				"test/*.{html,js}",
+				"test/**/*.html"
+			],
+			tasks: [ "build", "livereload", "test-in-watch" ]
+		},
+
+		livereload: {
+			options: {
+				port: livereloadPort
+			}
+		},
+
+		instrument: {
+			files: "dist/qunit.js",
+			options: {
+				lazy: false,
+				basePath: instrumentedDir
+			}
+		},
+
+		storeCoverage: {
+			options: {
+				dir: reportDir
+			}
+		},
+
+		makeReport: {
+			src: reportDir + "/**/*.json",
+			options: {
+				type: [ "lcov" ],
+				dir: reportDir,
+				print: "detail"
+			}
+		},
+
+		coveralls: {
+			options: {
+				force: true
+			},
+			all: {
+
+				// LCOV coverage file relevant to every target
+				src: "build/report/lcov.info"
+			}
 		}
-		var message = "name: " + details.name + " module: " + details.module +
-			" message: " + details.message;
-		grunt.log.error( message );
-	});
-	QUnit.testDone(function() {
-		testActive = false;
-	});
-	QUnit.done(function( details ) {
-		if ( runDone ) {
-			return;
-		}
-		var succeeded = ( details.failed === 0 ),
-			message = details.total + " assertions in (" + details.runtime + "ms), passed: " +
-				details.passed + ", failed: " + details.failed;
-		if ( succeeded ) {
-			grunt.log.ok( message );
-		} else {
-			grunt.log.error( message );
-		}
-		done( succeeded );
-		runDone = true;
-	});
-	QUnit.config.autorun = false;
+	} );
 
-	require( "./test/logs" );
-	require( "./test/main/test" );
-	require( "./test/main/assert" );
-	require( "./test/main/async" );
-	require( "./test/main/promise" );
-	require( "./test/main/modules" );
-	require( "./test/main/deepEqual" );
-	require( "./test/main/stack" );
-	require( "./test/globals-node" );
+	grunt.event.on( "qunit.coverage", function( file, coverage ) {
+		var testName = file.split( "/test/" ).pop().replace( ".html", "" );
+		var reportPath = path.join( "build/report/phantom", testName + ".json" );
 
-	QUnit.load();
-});
+		fs.ensureFileSync( reportPath );
+		fs.writeJsonSync( reportPath, coverage, { spaces: 0 } );
+	} );
 
-grunt.registerTask( "build", [ "concat" ] );
-grunt.registerTask( "default", [ "build", "jshint", "jscs", "search", "qunit", "test-on-node" ] );
+	grunt.loadTasks( "build/tasks" );
+	grunt.registerTask( "build", [ "rollup:src", "copy:src-js", "copy:src-css" ] );
+	grunt.registerTask( "test-base", [ "eslint", "search", "test-on-node" ] );
+	grunt.registerTask( "test", [ "test-base", "connect", "qunit" ] );
+	grunt.registerTask( "test-in-watch", [ "test-base", "qunit" ] );
+	grunt.registerTask( "coverage", [
+		"build",
+		"instrument",
+		"copy:dist-to-tmp",
+		"copy:instrumented-to-dist",
+		"test",
+		"copy:tmp-to-dist",
+		"storeCoverage",
+		"makeReport",
+		"coveralls"
+	] );
+
+	// Start the web server in a watch pre-task
+	// https://github.com/gruntjs/grunt-contrib-watch/issues/50
+	grunt.renameTask( "watch", "watch-repeatable" );
+	grunt.registerTask( "watch", [ "connect", "watch-repeatable" ] );
+
+	grunt.registerTask( "default", [ "build", "test" ] );
 
 };
