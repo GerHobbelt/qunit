@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-02T14:29Z
+ * Date: 2018-07-02T15:01Z
  */
 (function (global$1) {
   'use strict';
@@ -1224,6 +1224,36 @@
   }
 
   /**
+   * Same as `emit` above. If any callbacks return promises, `emitWithPromise` will
+   * return a promise that waits on all of them.
+   *
+   * @private
+   * @method emitWithPromise
+   * @param {String} eventName
+   * @param {Object} data
+   * @return {Void}
+   */
+  function emitWithPromise(eventName, data) {
+  	if (objectType(eventName) !== "string") {
+  		throw new TypeError("eventName must be a string when emitting an event");
+  	}
+
+  	// Clone the callbacks in case one of them registers a new callback
+  	var originalCallbacks = LISTENERS[eventName];
+  	var callbacks = originalCallbacks ? [].concat(toConsumableArray(originalCallbacks)) : [];
+
+  	var promises = undefined;
+  	for (var i = 0; i < callbacks.length; i++) {
+  		var maybePromise = callbacks[i](data);
+  		if (maybePromise && typeof maybePromise.then === "function") {
+  			promises = promises || [];
+  			promises.push(maybePromise);
+  		}
+  	}
+  	return promises && Promise.all(promises);
+  }
+
+  /**
    * Registers a callback as a listener to the specified event.
    *
    * @public
@@ -1913,7 +1943,10 @@
 
   		// After emitting the js-reporters event we cleanup the assertion data to
   		// avoid leaking it. It is not used by the legacy testDone callbacks.
-  		emit("testEnd", this.testReport.end(true));
+  		var promise = emitWithPromise("testEnd", this.testReport.end(true));
+  		if (promise) {
+  			this.resolvePromise(promise);
+  		}
   		this.testReport.slimAssertions();
 
   		runLoggingCallbacks("testDone", {
@@ -3126,6 +3159,7 @@
   		emit("runStart", globalSuite.start(true));
   		runLoggingCallbacks("begin", {
   			totalTests: Test.count,
+  			totalTestsToRun: config.queue.length,
   			modules: modulesLog
   		});
   	}
