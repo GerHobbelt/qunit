@@ -1,8 +1,8 @@
 {
-  "name": "qunitjs",
+  "name": "@gerhobbelt/qunitjs",
   "title": "QUnit",
   "description": "An easy-to-use JavaScript Unit Testing framework.",
-  "version": "1.19.1-pre",
+  "version": "1.19.1-1",
   "homepage": "http://qunitjs.com",
   "author": {
     "name": "jQuery Foundation and other contributors",
@@ -48,7 +48,8 @@
   "scripts": {
     "ci": "grunt && grunt coveralls && browserstack-runner",
     "test": "grunt",
-    "prepublish": "grunt build"
+    "prepublish": "grunt build",
+    "pub": "npm publish --access public"
   },
   "commitplease": {
     "components": [
