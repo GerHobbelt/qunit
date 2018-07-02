@@ -5,6 +5,11 @@ description: Add a test to run.
 categories:
   - main
   - async
+redirect_from:
+  - "/QUnit.asyncTest/"
+  - "/QUnit.test/"
+  - "/asyncTest/"
+  - "/test/"
 ---
 
 ## `QUnit.test( name, callback )`

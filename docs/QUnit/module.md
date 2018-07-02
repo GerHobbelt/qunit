@@ -4,6 +4,9 @@ title: module
 description: Group related tests under a single label.
 categories:
   - main
+redirect_from:
+  - "/QUnit.module/"
+  - "/module/"
 ---
 
 ## `QUnit.module( name [, hooks] [, nested ] )`

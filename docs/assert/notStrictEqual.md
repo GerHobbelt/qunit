@@ -4,6 +4,8 @@ title: notStrictEqual
 description: A strict comparison, checking for inequality.
 categories:
   - assert
+redirect_from:
+  - "/notStrictEqual/"
 ---
 
 ## `notStrictEqual( actual, expected [, message ] )`

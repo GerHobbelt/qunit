@@ -4,6 +4,8 @@ title: strictEqual
 description: A strict type and value comparison.
 categories:
   - assert
+redirect_from:
+  - "/strictEqual/"
 ---
 
 ## `strictEqual( actual, expected [, message ] )`
