@@ -31,7 +31,7 @@ QUnit.test( "<script id='qunit-unescaped-test'>'test';</script>", function( asse
 
 QUnit.module( "display test info", {
 	getPreviousTest: function( assert ) {
-		return document.getElementById( "qunit-test-output-" + assert.test.testId  )
+		return document.getElementById( "qunit-test-output-" + assert.test.testId )
 			.previousSibling;
 	}
 } );
@@ -152,7 +152,7 @@ QUnit.test( "disables autocomplete on module filter", function( assert ) {
 
 QUnit.module( "module list item", {
 	getPreviousModule: function( assert ) {
-		var element  = document.getElementById(
+		var element = document.getElementById(
 			"qunit-module-output-" + assert.test.module.moduleId
 		).previousSibling;
 
@@ -198,8 +198,8 @@ QUnit.module( "module list item", {
 
 	QUnit.test( "contains link to run module", function( assert ) {
 		var moduleItem = document.getElementById(
-			"qunit-module-output-" + assert.test.module.moduleId
-		),
+				"qunit-module-output-" + assert.test.module.moduleId
+			),
 			link = moduleItem.getElementsByTagName( "a" );
 
 		assert.strictEqual( link[ 0 ].innerHTML, "Run module",

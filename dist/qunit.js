@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-03T01:59Z
+ * Date: 2018-07-03T07:15Z
  */
 (function (global$1) {
   'use strict';
