@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-03T07:25Z
+ * Date: 2018-07-03T07:29Z
  */
 (function (global$1) {
   'use strict';
@@ -4277,14 +4277,14 @@
   	// Cover uncaught exceptions
   	// Returning true will suppress the default browser handler,
   	// returning false will let it run.
-  	window.onerror = function (message, fileName, lineNumber) {
+  	window.onerror = function (message, fileName, lineNumber, columnNumber, errorObject) {
   		var ret = false;
   		if (originalWindowOnError) {
-  			for (var _len = arguments.length, args = Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
-  				args[_key - 3] = arguments[_key];
+  			for (var _len = arguments.length, args = Array(_len > 5 ? _len - 5 : 0), _key = 5; _key < _len; _key++) {
+  				args[_key - 5] = arguments[_key];
   			}
 
-  			ret = originalWindowOnError.call.apply(originalWindowOnError, [this, message, fileName, lineNumber].concat(args));
+  			ret = originalWindowOnError.call.apply(originalWindowOnError, [this, message, fileName, lineNumber, columnNumber, errorObject].concat(args));
   		}
 
   		// Treat return value as window.onerror itself does,
@@ -4293,7 +4293,9 @@
   			var error = {
   				message: message,
   				fileName: fileName,
-  				lineNumber: lineNumber
+  				lineNumber: lineNumber,
+  				columnNumber: columnNumber,
+  				errorObject: errorObject
   			};
 
   			ret = QUnit.onError(error);
