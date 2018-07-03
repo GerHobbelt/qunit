@@ -1,5 +1,5 @@
 import QUnit from "../src/core";
-import { window, navigator } from "../src/globals";
+import { window, navigator, console } from "../src/globals";
 import "./urlparams";
 
 const stats = {
@@ -544,6 +544,7 @@ export function escapeText( s ) {
 
 	function appendInterface() {
 		var qunit = id( "qunit" );
+		var ex;
 
 		if ( qunit ) {
 			qunit.innerHTML =
@@ -553,6 +554,13 @@ export function escapeText( s ) {
 			appendFilteredTest() +
 			"<h2 id='qunit-userAgent'></h2>" +
 			"<ol id='qunit-tests'></ol>";
+		} else {
+			ex = new Error( "No DOM element with ID 'qunit' found!" );
+			if ( console && console.error ) {
+				console.error( ex );
+			} else {
+				throw ex;
+			}
 		}
 
 		appendHeader();
