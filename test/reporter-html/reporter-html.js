@@ -178,7 +178,7 @@ QUnit.module( "module list item", {
 		QUnit.test( "is passed after all tests passed", function( assert ) {
 			var moduleItem = this.getPreviousModule( assert );
 
-			assert.strictEqual( moduleItem.className, "module-passed",
+			assert.strictEqual( moduleItem.className, "module-pass",
 				"Module marked as passed" );
 		} );
 	} );

@@ -1008,7 +1008,7 @@ export function escapeText( s ) {
 	QUnit.moduleDone( function( details ) {
 		debugger;
 		if ( details.failed > 0 ) {
-			setModuleClass( details.name, "failed" );
+			setModuleClass( details.name, "fail" );
 			return;
 		}
 
@@ -1017,7 +1017,7 @@ export function escapeText( s ) {
 			return;
 		}
 
-		setModuleClass( details.name, "passed" );
+		setModuleClass( details.name, "pass" );
 	} );
 
 	// Avoid readyState issue with phantomjs

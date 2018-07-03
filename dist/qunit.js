@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-03T01:32Z
+ * Date: 2018-07-03T01:53Z
  */
 (function (global$1) {
   'use strict';
@@ -4246,7 +4246,7 @@
   	QUnit.moduleDone(function (details) {
   		debugger;
   		if (details.failed > 0) {
-  			setModuleClass(details.name, "failed");
+  			setModuleClass(details.name, "fail");
   			return;
   		}
 
@@ -4257,7 +4257,7 @@
   			return;
   		}
 
-  		setModuleClass(details.name, "passed");
+  		setModuleClass(details.name, "pass");
   	});
 
   	// Avoid readyState issue with phantomjs
