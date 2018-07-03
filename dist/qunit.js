@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-02T15:12Z
+ * Date: 2018-07-03T01:59Z
  */
 (function (global$1) {
   'use strict';
@@ -3844,6 +3844,7 @@
 
   		for (i = 0, l = modules.length; i < l; i++) {
   			moduleObj = modules[i];
+  			appendModuleName(moduleObj.name);
 
   			for (x = 0, z = moduleObj.tests.length; x < z; x++) {
   				test = moduleObj.tests[x];
@@ -3851,6 +3852,39 @@
   				appendTest(test.name, test.testId, moduleObj.name);
   			}
   		}
+  	}
+
+  	function appendModuleName(name) {
+  		var block,
+  		    title,
+  		    runModuleTrigger,
+  		    module = getModule(name),
+  		    tests = id("qunit-tests");
+
+  		if (!tests) {
+  			return;
+  		}
+
+  		block = document$$1.createElement("li");
+
+  		title = document$$1.createElement("strong");
+  		title.innerHTML = escapeText(module.name);
+
+  		runModuleTrigger = document$$1.createElement("a");
+  		runModuleTrigger.innerHTML = "Run module";
+  		runModuleTrigger.href = setUrl({ moduleId: module.moduleId });
+
+  		block.appendChild(title);
+  		block.appendChild(runModuleTrigger);
+  		block.id = "qunit-module-output-" + module.moduleId;
+
+  		tests.appendChild(block);
+  	}
+
+  	function getModule(name) {
+  		return QUnit.config.modules.find(function nameMatches(module) {
+  			return module.name === name;
+  		});
   	}
 
   	function appendTest(name, testId, moduleName) {
@@ -3973,6 +4007,10 @@
   		return nameHtml;
   	}
 
+  	QUnit.moduleStart(function (details) {
+  		setModuleClass(details.name, "running");
+  	});
+
   	QUnit.testStart(function (details) {
   		var running, testBlock, bad;
 
@@ -3992,6 +4030,13 @@
   			running.innerHTML = [bad ? "Rerunning previously failed test: <br />" : "Running: <br />", getNameHtml(details.name, details.module)].join("");
   		}
   	});
+
+  	function setModuleClass(moduleName, className) {
+  		var moduleClass = "module-" + className,
+  		    moduleBlock = id("qunit-module-output-" + getModule(moduleName).moduleId);
+
+  		moduleBlock.className = moduleClass;
+  	}
 
   	function stripHtml(string) {
 
@@ -4174,6 +4219,22 @@
   			});
   			testItem.appendChild(sourceName);
   		}
+  	});
+
+  	QUnit.moduleDone(function (details) {
+  		if (details.failed > 0) {
+  			setModuleClass(details.name, "fail");
+  			return;
+  		}
+
+  		if (details.tests.some(function (test) {
+  			return test.skip;
+  		})) {
+  			setModuleClass(details.name, "skipped");
+  			return;
+  		}
+
+  		setModuleClass(details.name, "pass");
   	});
 
   	// Avoid readyState issue with phantomjs
