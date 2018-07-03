@@ -1,5 +1,5 @@
 import QUnit from "../src/core";
-import { window, navigator } from "../src/globals";
+import { window, navigator, console } from "../src/globals";
 import "./urlparams";
 
 const stats = {
@@ -544,6 +544,7 @@ export function escapeText( s ) {
 
 	function appendInterface() {
 		var qunit = id( "qunit" );
+		var ex;
 
 		if ( qunit ) {
 			qunit.innerHTML =
@@ -553,6 +554,13 @@ export function escapeText( s ) {
 			appendFilteredTest() +
 			"<h2 id='qunit-userAgent'></h2>" +
 			"<ol id='qunit-tests'></ol>";
+		} else {
+			ex = new Error( "No DOM element with ID 'qunit' found!" );
+			if ( console && console.error ) {
+				console.error( ex );
+			} else {
+				throw ex;
+			}
 		}
 
 		appendHeader();
@@ -661,6 +669,7 @@ export function escapeText( s ) {
 	} );
 
 	QUnit.done( function( details ) {
+		debugger;
 		var banner = id( "qunit-banner" ),
 			tests = id( "qunit-tests" ),
 			abortButton = id( "qunit-abort-tests-button" ),
@@ -781,9 +790,21 @@ export function escapeText( s ) {
 
 	function setModuleClass( moduleName, className ) {
 		var moduleClass = "module-" + className,
-			moduleBlock = id( "qunit-module-output-" + getModule( moduleName ).moduleId );
+			idName = "qunit-module-output-" + getModule( moduleName ).moduleId,
+			moduleBlock = id( idName ),
+			ex;
 
-		moduleBlock.className = moduleClass;
+		if ( moduleBlock ) {
+			moduleBlock.className = moduleClass;
+		} else {
+			ex = new Error( "Module: " + moduleName + "::" + className +
+				": No DOM element with ID '" + idName + "' found!" );
+			if ( console && console.error ) {
+				console.error( ex );
+			} else {
+				throw ex;
+			}
+		}
 	}
 
 	function stripHtml( string ) {
@@ -887,6 +908,7 @@ export function escapeText( s ) {
 	} );
 
 	QUnit.testDone( function( details ) {
+		debugger;
 		var testTitle, time, testItem, assertList,
 			good, bad, testCounts, skipped, sourceName,
 			tests = id( "qunit-tests" );
@@ -984,6 +1006,7 @@ export function escapeText( s ) {
 	} );
 
 	QUnit.moduleDone( function( details ) {
+		debugger;
 		if ( details.failed > 0 ) {
 			setModuleClass( details.name, "failed" );
 			return;
@@ -994,7 +1017,7 @@ export function escapeText( s ) {
 			return;
 		}
 
-		setModuleClass( "passed" );
+		setModuleClass( details.name, "passed" );
 	} );
 
 	// Avoid readyState issue with phantomjs
@@ -1017,10 +1040,11 @@ export function escapeText( s ) {
 	// Cover uncaught exceptions
 	// Returning true will suppress the default browser handler,
 	// returning false will let it run.
-	window.onerror = function( message, fileName, lineNumber, ...args ) {
+	window.onerror = function( message, fileName, lineNumber, columnNumber, errorObject, ...args ) {
 		var ret = false;
+		debugger;
 		if ( originalWindowOnError ) {
-			ret = originalWindowOnError.call( this, message, fileName, lineNumber, ...args );
+			ret = originalWindowOnError.call( this, message, fileName, lineNumber, columnNumber, errorObject, ...args );
 		}
 
 		// Treat return value as window.onerror itself does,
@@ -1029,7 +1053,9 @@ export function escapeText( s ) {
 			const error = {
 				message,
 				fileName,
-				lineNumber
+				lineNumber, 
+				columnNumber, 
+				errorObject
 			};
 
 			ret = QUnit.onError( error );
@@ -1038,8 +1064,22 @@ export function escapeText( s ) {
 		return ret;
 	};
 
+	window.addEventListener( "error", function( event ) {
+		var ret = false;
+
+		debugger;
+		var error = {
+			message: event
+		};
+
+		// ret = QUnit.onError( error );
+
+		return ret;
+	} );
+
 	// Listen for unhandled rejections, and call QUnit.onUnhandledRejection
 	window.addEventListener( "unhandledrejection", function( event ) {
+		debugger;
 		QUnit.onUnhandledRejection( event.reason );
 	} );
 }() );

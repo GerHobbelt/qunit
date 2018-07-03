@@ -1,5 +1,5 @@
 import { window, localSessionStorage } from "../globals";
-import { extend } from "./utilities";
+import { extend, generateHash } from "./utilities";
 
 /**
  * Config object: Maintain internal state
@@ -44,6 +44,7 @@ const config = {
 	currentModule: {
 		name: "",
 		tests: [],
+		moduleId: generateHash( "--unnamed--" ),
 		childModules: [],
 		testsRun: 0,
 		unskippedTestsRun: 0,

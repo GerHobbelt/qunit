@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-02T15:12Z
+ * Date: 2018-07-03T01:32Z
  */
 (function (global$1) {
   'use strict';
@@ -638,6 +638,7 @@
   	currentModule: {
   		name: "",
   		tests: [],
+  		moduleId: generateHash("--unnamed--"),
   		childModules: [],
   		testsRun: 0,
   		unskippedTestsRun: 0,
@@ -3827,9 +3828,17 @@
 
   	function appendInterface() {
   		var qunit = id("qunit");
+  		var ex;
 
   		if (qunit) {
   			qunit.innerHTML = "<h1 id='qunit-header'>" + escapeText(document$$1.title) + "</h1>" + "<h2 id='qunit-banner'></h2>" + "<div id='qunit-testrunner-toolbar'></div>" + appendFilteredTest() + "<h2 id='qunit-userAgent'></h2>" + "<ol id='qunit-tests'></ol>";
+  		} else {
+  			ex = new Error("No DOM element with ID 'qunit' found!");
+  			if (console && console.error) {
+  				console.error(ex);
+  			} else {
+  				throw ex;
+  			}
   		}
 
   		appendHeader();
@@ -3844,6 +3853,7 @@
 
   		for (i = 0, l = modules.length; i < l; i++) {
   			moduleObj = modules[i];
+  			appendModuleName(moduleObj.name);
 
   			for (x = 0, z = moduleObj.tests.length; x < z; x++) {
   				test = moduleObj.tests[x];
@@ -3851,6 +3861,39 @@
   				appendTest(test.name, test.testId, moduleObj.name);
   			}
   		}
+  	}
+
+  	function appendModuleName(name) {
+  		var block,
+  		    title,
+  		    runModuleTrigger,
+  		    module = getModule(name),
+  		    tests = id("qunit-tests");
+
+  		if (!tests) {
+  			return;
+  		}
+
+  		block = document$$1.createElement("li");
+
+  		title = document$$1.createElement("strong");
+  		title.innerHTML = escapeText(module.name);
+
+  		runModuleTrigger = document$$1.createElement("a");
+  		runModuleTrigger.innerHTML = "Run module";
+  		runModuleTrigger.href = setUrl({ moduleId: module.moduleId });
+
+  		block.appendChild(title);
+  		block.appendChild(runModuleTrigger);
+  		block.id = "qunit-module-output-" + module.moduleId;
+
+  		tests.appendChild(block);
+  	}
+
+  	function getModule(name) {
+  		return QUnit.config.modules.find(function nameMatches(module) {
+  			return module.name === name;
+  		});
   	}
 
   	function appendTest(name, testId, moduleName) {
@@ -3909,6 +3952,7 @@
   	});
 
   	QUnit.done(function (details) {
+  		debugger;
   		var banner = id("qunit-banner"),
   		    tests = id("qunit-tests"),
   		    abortButton = id("qunit-abort-tests-button"),
@@ -3973,6 +4017,10 @@
   		return nameHtml;
   	}
 
+  	QUnit.moduleStart(function (details) {
+  		setModuleClass(details.name, "running");
+  	});
+
   	QUnit.testStart(function (details) {
   		var running, testBlock, bad;
 
@@ -3992,6 +4040,24 @@
   			running.innerHTML = [bad ? "Rerunning previously failed test: <br />" : "Running: <br />", getNameHtml(details.name, details.module)].join("");
   		}
   	});
+
+  	function setModuleClass(moduleName, className) {
+  		var moduleClass = "module-" + className,
+  		    idName = "qunit-module-output-" + getModule(moduleName).moduleId,
+  		    moduleBlock = id(idName),
+  		    ex;
+
+  		if (moduleBlock) {
+  			moduleBlock.className = moduleClass;
+  		} else {
+  			ex = new Error("Module: " + moduleName + "::" + className + ": No DOM element with ID '" + idName + "' found!");
+  			if (console && console.error) {
+  				console.error(ex);
+  			} else {
+  				throw ex;
+  			}
+  		}
+  	}
 
   	function stripHtml(string) {
 
@@ -4076,6 +4142,7 @@
   	});
 
   	QUnit.testDone(function (details) {
+  		debugger;
   		var testTitle,
   		    time,
   		    testItem,
@@ -4176,6 +4243,23 @@
   		}
   	});
 
+  	QUnit.moduleDone(function (details) {
+  		debugger;
+  		if (details.failed > 0) {
+  			setModuleClass(details.name, "failed");
+  			return;
+  		}
+
+  		if (details.tests.some(function (test) {
+  			return test.skip;
+  		})) {
+  			setModuleClass(details.name, "skipped");
+  			return;
+  		}
+
+  		setModuleClass(details.name, "passed");
+  	});
+
   	// Avoid readyState issue with phantomjs
   	// Ref: #818
   	var notPhantom = function (p) {
@@ -4196,14 +4280,15 @@
   	// Cover uncaught exceptions
   	// Returning true will suppress the default browser handler,
   	// returning false will let it run.
-  	window.onerror = function (message, fileName, lineNumber) {
+  	window.onerror = function (message, fileName, lineNumber, columnNumber, errorObject) {
   		var ret = false;
+  		debugger;
   		if (originalWindowOnError) {
-  			for (var _len = arguments.length, args = Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
-  				args[_key - 3] = arguments[_key];
+  			for (var _len = arguments.length, args = Array(_len > 5 ? _len - 5 : 0), _key = 5; _key < _len; _key++) {
+  				args[_key - 5] = arguments[_key];
   			}
 
-  			ret = originalWindowOnError.call.apply(originalWindowOnError, [this, message, fileName, lineNumber].concat(args));
+  			ret = originalWindowOnError.call.apply(originalWindowOnError, [this, message, fileName, lineNumber, columnNumber, errorObject].concat(args));
   		}
 
   		// Treat return value as window.onerror itself does,
@@ -4212,7 +4297,9 @@
   			var error = {
   				message: message,
   				fileName: fileName,
-  				lineNumber: lineNumber
+  				lineNumber: lineNumber,
+  				columnNumber: columnNumber,
+  				errorObject: errorObject
   			};
 
   			ret = QUnit.onError(error);
@@ -4221,8 +4308,16 @@
   		return ret;
   	};
 
+  	window.addEventListener("error", function (event) {
+  		var ret = false;
+
+  		debugger;
+  		return ret;
+  	});
+
   	// Listen for unhandled rejections, and call QUnit.onUnhandledRejection
   	window.addEventListener("unhandledrejection", function (event) {
+  		debugger;
   		QUnit.onUnhandledRejection(event.reason);
   	});
   })();

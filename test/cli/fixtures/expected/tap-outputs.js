@@ -101,11 +101,11 @@ not ok 1 Unhandled Rejections > test passes just fine, but has a rejected promis
   severity: failed
   actual: {
   "message": "Error thrown in non-returned promise!",
-  "stack": "Error: Error thrown in non-returned promise!\\n    at /some/path/wherever/unhandled-rejection.js:13:11"
+  "stack": "Error: Error thrown in non-returned promise!\\n    at /some/path/wherever/cli/fixtures/unhandled-rejection.js:17:11"
 }
   expected: undefined
   stack: Error: Error thrown in non-returned promise!
-    at /some/path/wherever/unhandled-rejection.js:13:11
+    at /some/path/wherever/cli/fixtures/unhandled-rejection.js:17:11
   ...
 not ok 2 global failure
   ---
@@ -113,11 +113,11 @@ not ok 2 global failure
   severity: failed
   actual: {
   "message": "outside of a test context",
-  "stack": "Error: outside of a test context\\n    at Object.<anonymous> (/some/path/wherever/unhandled-rejection.js:20:18)"
+  "stack": "Error: outside of a test context\\n    at Object.<anonymous> (/some/path/wherever/cli/fixtures/unhandled-rejection.js:32:18)"
 }
   expected: undefined
   stack: Error: outside of a test context
-    at Object.<anonymous> (/some/path/wherever/unhandled-rejection.js:20:18)
+    at Object.<anonymous> (/some/path/wherever/cli/fixtures/unhandled-rejection.js:32:18)
   ...
 1..2
 # pass 0
