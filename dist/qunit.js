@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-03T07:19Z
+ * Date: 2018-07-03T07:20Z
  */
 (function (global$1) {
   'use strict';
@@ -3828,9 +3828,17 @@
 
   	function appendInterface() {
   		var qunit = id("qunit");
+  		var ex;
 
   		if (qunit) {
   			qunit.innerHTML = "<h1 id='qunit-header'>" + escapeText(document$$1.title) + "</h1>" + "<h2 id='qunit-banner'></h2>" + "<div id='qunit-testrunner-toolbar'></div>" + appendFilteredTest() + "<h2 id='qunit-userAgent'></h2>" + "<ol id='qunit-tests'></ol>";
+  		} else {
+  			ex = new Error("No DOM element with ID 'qunit' found!");
+  			if (console && console.error) {
+  				console.error(ex);
+  			} else {
+  				throw ex;
+  			}
   		}
 
   		appendHeader();
