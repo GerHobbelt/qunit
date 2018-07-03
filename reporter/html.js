@@ -789,9 +789,21 @@ export function escapeText( s ) {
 
 	function setModuleClass( moduleName, className ) {
 		var moduleClass = "module-" + className,
-			moduleBlock = id( "qunit-module-output-" + getModule( moduleName ).moduleId );
+			idName = "qunit-module-output-" + getModule( moduleName ).moduleId,
+			moduleBlock = id( idName ),
+			ex;
 
-		moduleBlock.className = moduleClass;
+		if ( moduleBlock ) {
+			moduleBlock.className = moduleClass;
+		} else {
+			ex = new Error( "Module: " + moduleName + "::" + className +
+				": No DOM element with ID '" + idName + "' found!" );
+			if ( console && console.error ) {
+				console.error( ex );
+			} else {
+				throw ex;
+			}
+		}
 	}
 
 	function stripHtml( string ) {
