@@ -1037,10 +1037,10 @@ export function escapeText( s ) {
 	// Cover uncaught exceptions
 	// Returning true will suppress the default browser handler,
 	// returning false will let it run.
-	window.onerror = function( message, fileName, lineNumber, ...args ) {
+	window.onerror = function( message, fileName, lineNumber, columnNumber, errorObject, ...args ) {
 		var ret = false;
 		if ( originalWindowOnError ) {
-			ret = originalWindowOnError.call( this, message, fileName, lineNumber, ...args );
+			ret = originalWindowOnError.call( this, message, fileName, lineNumber, columnNumber, errorObject, ...args );
 		}
 
 		// Treat return value as window.onerror itself does,
@@ -1049,7 +1049,9 @@ export function escapeText( s ) {
 			const error = {
 				message,
 				fileName,
-				lineNumber
+				lineNumber, 
+				columnNumber, 
+				errorObject
 			};
 
 			ret = QUnit.onError( error );
