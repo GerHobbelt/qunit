@@ -1040,7 +1040,10 @@ export function escapeText( s ) {
 	window.onerror = function( message, fileName, lineNumber, columnNumber, errorObject, ...args ) {
 		var ret = false;
 		if ( originalWindowOnError ) {
-			ret = originalWindowOnError.call( this, message, fileName, lineNumber, columnNumber, errorObject, ...args );
+			ret = originalWindowOnError.call( this,
+				message, fileName,
+				lineNumber, columnNumber, errorObject,
+				...args );
 		}
 
 		// Treat return value as window.onerror itself does,
@@ -1049,8 +1052,8 @@ export function escapeText( s ) {
 			const error = {
 				message,
 				fileName,
-				lineNumber, 
-				columnNumber, 
+				lineNumber,
+				columnNumber,
 				errorObject
 			};
 
