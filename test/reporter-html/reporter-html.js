@@ -179,7 +179,7 @@ QUnit.module( "module list item", {
 			var moduleItem = this.getPreviousModule( assert );
 
 			assert.strictEqual( moduleItem.className, "module-pass",
-				"Module marked as pass" );
+				"Module marked as passed" );
 		} );
 	} );
 
