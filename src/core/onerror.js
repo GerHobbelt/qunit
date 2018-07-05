@@ -10,20 +10,20 @@ import { extend } from "./utilities";
 export default function onError( error, ...args ) {
 	let ret;
 
-	if (config.current && config.current.onError) {
-	  ret = config.current.onError(error);
+	if ( config.current && config.current.onError ) {
+		ret = config.current.onError( error );
 	}
-	if (ret !== true && config.currentModule && config.currentModule.onError) {
-	  ret = config.currentModule.onError(error);
+	if ( ret !== true && config.currentModule && config.currentModule.onError ) {
+		ret = config.currentModule.onError( error );
 	}
-	if (ret === true ||
-		(config.currentModule && config.currentModule.ignoreGlobalErrors) ||
-		(config.current && config.current.ignoreGlobalErrors)
+	if ( ret === true ||
+		( config.currentModule && config.currentModule.ignoreGlobalErrors ) ||
+		( config.current && config.current.ignoreGlobalErrors )
 	) {
 	  return true;
 	}
 
-	if (config.current) {
+	if ( config.current ) {
 		pushFailure( error.message, error.fileName + ":" + error.lineNumber, ...args );
 	} else {
 		test( "global failure", extend( function() {

@@ -330,7 +330,7 @@ class Assert {
 			}
 		}
 
-		let oldIG = currentTest.ignoreGlobalErrors;
+		const oldIG = currentTest.ignoreGlobalErrors;
 		currentTest.ignoreGlobalErrors = true;
 		try {
 			block.call( currentTest.testEnvironment );
