@@ -17,11 +17,11 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 		*/
 
 		// QUnit.config.currentModule.ignoreGlobalErrors = true;
-		QUnit.config.currentModule.onError = function () {
-			throw new Error('module level onError handler should not be invoked');
+		QUnit.config.currentModule.onError = function() {
+			throw new Error( "module level onError handler should not be invoked" );
 		};
-		QUnit.config.currentModule.onUnhandledRejection = function () {
-			throw new Error('module level onUnhandledRejection handler should not be invoked');
+		QUnit.config.currentModule.onUnhandledRejection = function() {
+			throw new Error( "module level onUnhandledRejection handler should not be invoked" );
 		};
 
 		QUnit.test( "test passes just fine, but has a rejected promise", function( assert ) {
@@ -34,7 +34,8 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 				assert.ok( true ); // #2
 				throw new Error( "Error thrown in non-returned promise!" );
 			} ).catch( function( error ) {
-				 // #3:
+
+				// #3:
 				assert.ok( /Error thrown in non-returned promise/.test( error.message ), "expected user-coded exception" );
 			} );
 
@@ -45,12 +46,13 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 	} );
 
 	QUnit.module( "Unhandled Rejections inside test context", function( hooks ) {
+
 		// QUnit.config.currentModule.ignoreGlobalErrors = true;
-		QUnit.config.currentModule.onError = function () {
-			throw new Error('module level onError handler should not be invoked');
+		QUnit.config.currentModule.onError = function() {
+			throw new Error( "module level onError handler should not be invoked" );
 		};
-		QUnit.config.currentModule.onUnhandledRejection = function () {
-			throw new Error('module level onUnhandledRejection handler should not be invoked');
+		QUnit.config.currentModule.onUnhandledRejection = function() {
+			throw new Error( "module level onUnhandledRejection handler should not be invoked" );
 		};
 
 		var originalPushResult;
@@ -71,6 +73,7 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 				this.deepEqual(
 					resultInfo.message,
 					"okay",
+
 					// {
 					// 	message: "Error message",
 					// 	source: "filePath.js:1",
@@ -108,15 +111,16 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 		} );
 	} );
 
-	QUnit.module( "Unhandled Rejections outside test context 1", function( hooks ) {
+	QUnit.module( "Unhandled Rejections outside test context 1", function() {
 		var count = 0;
-		QUnit.config.currentModule.onError = function () {
-			throw new Error('module level onError handler should not be invoked');
+		QUnit.config.currentModule.onError = function() {
+			throw new Error( "module level onError handler should not be invoked" );
 		};
-		QUnit.config.currentModule.onUnhandledRejection = function () {
+		QUnit.config.currentModule.onUnhandledRejection = function() {
+
 			// QUnit.config.currentModule.ignoreGlobalErrors = true;
 			count++;
-			return (count === 1);
+			return ( count === 1 );
 		};
 
 		QUnit.test( "test passes just fine", function( assert ) {
@@ -143,16 +147,18 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 		} );
 	} );
 
-	QUnit.module( "Unhandled Rejections outside test context 2", function( hooks ) {
+	QUnit.module( "Unhandled Rejections outside test context 2", function() {
 		var count = 0;
+
 		// QUnit.assert.expect( 1 );
-		QUnit.config.currentModule.onError = function () {
+		QUnit.config.currentModule.onError = function() {
+
 			// QUnit.config.currentModule.ignoreGlobalErrors = true;
 			count++;
 			return count === 1;
 		};
-		QUnit.config.currentModule.onUnhandledRejection = function () {
-			throw new Error('module level onUnhandledRejection handler should not be invoked');
+		QUnit.config.currentModule.onUnhandledRejection = function() {
+			throw new Error( "module level onUnhandledRejection handler should not be invoked" );
 		};
 
 		QUnit.test( "test passes just fine", function( assert ) {
@@ -166,13 +172,14 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 		throw ex;
 	} );
 
-	QUnit.module( "Unhandled Rejections outside test context 3", function( hooks ) {
+	QUnit.module( "Unhandled Rejections outside test context 3", function() {
 		var count = 0;
+
 		// QUnit.config.currentModule.ignoreGlobalErrors = true;
-		QUnit.config.currentModule.onError = function () {
-			throw new Error('module level onError handler should not be invoked');
+		QUnit.config.currentModule.onError = function() {
+			throw new Error( "module level onError handler should not be invoked" );
 		};
-		QUnit.config.currentModule.onUnhandledRejection = function () {
+		QUnit.config.currentModule.onUnhandledRejection = function() {
 			count++;
 			return count === 1;
 		};
@@ -197,12 +204,13 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 	} );
 
 	QUnit.module( "Unhandled Rejections inside test context: cope with buggy/cyclic afterEach() userland code", function( hooks ) {
+
 		// QUnit.config.currentModule.ignoreGlobalErrors = true;
-		QUnit.config.currentModule.onError = function () {
-			throw new Error('module level onError handler should not be invoked');
+		QUnit.config.currentModule.onError = function() {
+			throw new Error( "module level onError handler should not be invoked" );
 		};
-		QUnit.config.currentModule.onUnhandledRejection = function () {
-			throw new Error('module level onUnhandledRejection handler should not be invoked');
+		QUnit.config.currentModule.onUnhandledRejection = function() {
+			throw new Error( "module level onUnhandledRejection handler should not be invoked" );
 		};
 
 		var originalPushResult;
@@ -223,6 +231,7 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 				this.deepEqual(
 					resultInfo.message,
 					"okay",
+
 					// {
 					// 	message: "Error message",
 					// 	source: "filePath.js:1",
@@ -240,8 +249,9 @@ if ( HAS_UNHANDLED_REJECTION_HANDLER ) {
 		} );
 
 		hooks.afterEach( function() {
+
 			/* good: */ // QUnit.config.current.assert.pushResult = originalPushResult;
-			/* bad: */     QUnit.config.current.pushResult = originalPushResult;
+			/* bad: */ QUnit.config.current.pushResult = originalPushResult;
 		} );
 
 		QUnit.test( "regression-testing the bug-triggering test", function( assert ) {
