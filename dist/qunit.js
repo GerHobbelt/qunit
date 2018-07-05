@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-05T06:45Z
+ * Date: 2018-07-05T06:52Z
  */
 (function (global$1) {
   'use strict';
@@ -2532,7 +2532,7 @@
   				result = false;
   			}
 
-  			return this.pushResult({
+  			this.pushResult({
   				result: result,
   				message: assertionMessage
   			});
@@ -2568,7 +2568,7 @@
   	}, {
   		key: "async",
   		value: function async(count) {
-  			var test$$1 = this.test;
+  			var currentTest = this.test;
 
   			var popped = false,
   			    acceptCallCount = count;
@@ -2577,15 +2577,15 @@
   				acceptCallCount = 1;
   			}
 
-  			var resume = internalStop(test$$1);
+  			var resume = internalStop(currentTest);
 
   			return function done() {
-  				if (config.current !== test$$1) {
+  				if (config.current !== currentTest) {
   					throw Error("assert.async callback called after test finished.");
   				}
 
   				if (popped) {
-  					test$$1.pushFailure("Too many calls to the `assert.async` callback", sourceFromStacktrace(2, true));
+  					currentTest.pushFailure("Too many calls to the `assert.async` callback", sourceFromStacktrace(2, true));
   					return;
   				}
 
@@ -2837,13 +2837,14 @@
   				}
   			}
 
+  			var oldIG = currentTest.ignoreGlobalErrors;
   			currentTest.ignoreGlobalErrors = true;
   			try {
   				block.call(currentTest.testEnvironment);
   			} catch (e) {
   				actual = e;
   			}
-  			currentTest.ignoreGlobalErrors = false;
+  			currentTest.ignoreGlobalErrors = oldIG;
 
   			if (actual) {
   				var expectedType = objectType(expected);
