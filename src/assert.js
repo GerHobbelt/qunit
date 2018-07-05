@@ -130,7 +130,59 @@ class Assert {
 			assert = currentTest.assert;
 		}
 
-		return assert.test.pushResult( resultInfo );
+		// prevent infinite recursion when user coded anything wrong in a custom assert.pushResult() override,
+		// as shown in the last test in unhandled-rejection.js test files, f.e.
+		//
+		// We count the nesting levels and when it gets obvious, we cop out by invoking the hardcoded base method.
+		var test = assert.test;
+		if (!test.__assertPushResultCallCount) {
+			test.__assertPushResultCallCount = 1;
+		} else {
+			test.__assertPushResultCallCount++;
+			if (test.__assertPushResultCallCount > 3) {
+				// WARNING: failing by throwing an error may sound good to you, but when the onError()
+				// API is invoked, another error gets pushed through here and we're back at where we
+				// started: infinite recursion!
+				//
+				// Hence we should something simple and very safe right now:
+				try {
+					var e = new Error('infinite recursion through QUnit::assert::pushResult() API: you might want to check your hooks & assert overrides');
+					console.error(e);
+					debugger;
+
+					var tests = document.getElementById("qunit-tests");
+					if (tests) {
+						var report = document.createElement("li");
+						report.className = "fail";
+						var subject = document.createElement("strong");
+						subject.textContent = '' + (test.module && test.module.name) + ': ' + test.testName + '\nError: ' + e.message;
+						subject.innerHTML = subject.innerHTML.replace(/\n/g, '<br>');
+						report.appendChild(subject);
+
+						var trace = document.createElement("p");
+						trace.textContent = e.stack.replace(/^[^\n]*\n/, '');
+						report.appendChild(trace);
+
+						tests.appendChild(report);
+					}
+
+					// this.assertions.push({
+					//   result: !!resultInfo.result,
+					//   message: resultInfo.message
+					// });
+					this.assertions.push({
+						result: false,
+						message: e.message + ' @\n' + e.stack
+					});
+				} catch (ex) {
+					console.error(ex);
+				}
+				test.__assertPushResultCallCount = 0;
+				return;
+			}
+		}
+		test.pushResult(resultInfo);
+		test.__assertPushResultCallCount--;
 	}
 
 	ok( result, message ) {
