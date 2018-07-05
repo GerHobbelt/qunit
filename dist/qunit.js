@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-05T06:52Z
+ * Date: 2018-07-05T07:05Z
  */
 (function (global$1) {
   'use strict';
@@ -3058,10 +3058,19 @@
   		args[_key - 1] = arguments[_key];
   	}
 
+  	var ret = void 0;
+
+  	if (config.current && config.current.onError) {
+  		ret = config.current.onError(error);
+  	}
+  	if (ret !== true && config.currentModule && config.currentModule.onError) {
+  		ret = config.currentModule.onError(error);
+  	}
+  	if (ret === true || config.currentModule && config.currentModule.ignoreGlobalErrors || config.current && config.current.ignoreGlobalErrors) {
+  		return true;
+  	}
+
   	if (config.current) {
-  		if (config.current.ignoreGlobalErrors) {
-  			return true;
-  		}
   		pushFailure.apply(undefined, [error.message, error.fileName + ":" + error.lineNumber].concat(args));
   	} else {
   		test("global failure", extend(function () {
@@ -3082,12 +3091,22 @@
   	};
 
   	var currentTest = config.current;
-  	if (currentTest) {
-  		currentTest.assert.pushResult(resultInfo);
-  	} else {
-  		test("global failure", extend(function (assert) {
-  			assert.pushResult(resultInfo);
-  		}, { validTest: true }));
+  	var ret = void 0;
+
+  	if (currentTest && currentTest.onUnhandledRejection) {
+  		ret = currentTest.onUnhandledRejection(reason);
+  	}
+  	if (ret !== true && config.currentModule && config.currentModule.onUnhandledRejection) {
+  		ret = config.currentModule.onUnhandledRejection(reason);
+  	}
+  	if (ret !== true) {
+  		if (currentTest) {
+  			currentTest.assert.pushResult(resultInfo);
+  		} else {
+  			test("global failure", extend(function (assert) {
+  				assert.pushResult(resultInfo);
+  			}, { validTest: true }));
+  		}
   	}
   }
 
