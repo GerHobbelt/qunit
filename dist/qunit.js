@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-03T07:29Z
+ * Date: 2018-07-04T23:16Z
  */
 (function (global$1) {
   'use strict';
@@ -1138,9 +1138,34 @@
   	if (objectType(executeNow) === "function") {
   		moduleStack.push(module);
   		config.currentModule = module;
-  		executeNow.call(module.testEnvironment, moduleFns);
-  		moduleStack.pop();
-  		module = module.parentModule || currentModule;
+      module.__setupEnd = function moduleSetupEnd() {
+        module.__setupEnd = function () {
+          //debugger;
+        };
+        moduleStack.pop();
+        module = module.parentModule || currentModule;
+        config.currentModule = module;
+      };
+      try {
+  		  executeNow.call(module.testEnvironment, moduleFns);
+      } catch (e) {
+        var eInfo = {
+          message: "Module " + name + ": module init failed: " + (e.message || e),
+          fileName: e.fileName,
+          lineNumber: e.lineNumber,
+          columnNumber: e.columnNumber,
+          errorObject: e
+        };
+        var ret = QUnit.onError(eInfo);
+        if (ret !== true) {
+          // QUnit.pushFailure("Module " + name + ": module init failed: " + (e.message || e), extractStacktrace(e, 0, true));
+          throw e;
+        }
+      }
+
+      // Spurious case: direct invocation of Qunit.onError() inside the `executeNow` code
+      // should not blow up the moduleStacknor the currentModule!
+      module.__setupEnd();
   	}
 
   	config.currentModule = module;
@@ -2505,7 +2530,7 @@
   				result = false;
   			}
 
-  			return this.pushResult({
+  			this.pushResult({
   				result: result,
   				message: assertionMessage
   			});
@@ -2541,7 +2566,7 @@
   	}, {
   		key: "async",
   		value: function async(count) {
-  			var test$$1 = this.test;
+  			var currentTest = this.test;
 
   			var popped = false,
   			    acceptCallCount = count;
@@ -2550,15 +2575,15 @@
   				acceptCallCount = 1;
   			}
 
-  			var resume = internalStop(test$$1);
+  			var resume = internalStop(currentTest);
 
   			return function done() {
-  				if (config.current !== test$$1) {
+  				if (config.current !== currentTest) {
   					throw Error("assert.async callback called after test finished.");
   				}
 
   				if (popped) {
-  					test$$1.pushFailure("Too many calls to the `assert.async` callback", sourceFromStacktrace(2, true));
+  					currentTest.pushFailure("Too many calls to the `assert.async` callback", sourceFromStacktrace(2, true));
   					return;
   				}
 
@@ -2591,7 +2616,7 @@
   		}
   	}, {
   		key: "pushResult",
-  		value: function pushResult(resultInfo) {
+  		value: function assertPushResult(resultInfo) {
 
   			// Destructure of resultInfo = { result, actual, expected, message, negative }
   			var assert = this;
@@ -2610,7 +2635,59 @@
   				assert = currentTest.assert;
   			}
 
-  			return assert.test.pushResult(resultInfo);
+        // prevent infinite recursion when user coded anything wrong in a custom assert.pushResult() override,
+        // as shown in the last test in unhandled-rejection.js test files, f.e.
+        // 
+        // We count the nesting levels and when it gets obvious, we cop out by invoking the hardcoded base method.
+        var test = assert.test;
+        if (!test.__assertPushResultCallCount) {
+          test.__assertPushResultCallCount = 1;
+        } else {
+          test.__assertPushResultCallCount++;
+          if (test.__assertPushResultCallCount > 3) {
+            // WARNING: failing by throwing an error may sound good to you, but when the onError()
+            // API is invoked, another error gets pushed through here and we're back at where we
+            // started: infinite recursion!
+            // 
+            // Hence we should something simple and very safe right now:
+            try {
+              var e = new Error('infinite recursion through QUnit::assert::pushResult() API: you might want to check your hooks & assert overrides');
+              console.error(e);
+              debugger;
+
+              var tests = document.getElementById("qunit-tests");
+              if (tests) {
+                var report = document.createElement("li");
+                report.className = "fail";
+                var subject = document.createElement("strong");
+                subject.textContent = '' + (test.module && test.module.name) + ': ' + test.testName + '\nError: ' + e.message;
+                subject.innerHTML = subject.innerHTML.replace(/\n/g, '<br>');
+                report.appendChild(subject);
+
+                var trace = document.createElement("p");
+                trace.textContent = e.stack.replace(/^[^\n]*\n/, '');
+                report.appendChild(trace);
+
+                tests.appendChild(report);
+              }
+
+              // this.assertions.push({
+              //   result: !!resultInfo.result,
+              //   message: resultInfo.message
+              // });
+              this.assertions.push({
+                result: false,
+                message: e.message + ' @\n' + e.stack
+              });
+            } catch (ex) {
+              console.error(ex);
+            }
+            test.__assertPushResultCallCount = 0;
+            return;
+          }
+        }
+  			test.pushResult(resultInfo);
+        test.__assertPushResultCallCount--;
   		}
   	}, {
   		key: "ok",
@@ -2756,13 +2833,14 @@
   				}
   			}
 
+        var oldIG = currentTest.ignoreGlobalErrors; 
   			currentTest.ignoreGlobalErrors = true;
   			try {
   				block.call(currentTest.testEnvironment);
   			} catch (e) {
   				actual = e;
   			}
-  			currentTest.ignoreGlobalErrors = false;
+  			currentTest.ignoreGlobalErrors = oldIG;
 
   			if (actual) {
   				var expectedType = objectType(expected);
@@ -2976,10 +3054,21 @@
   		args[_key - 1] = arguments[_key];
   	}
 
+    var ret;
+    if (config.current && config.current.onError) {
+      ret = config.current.onError(error);
+    } 
+    if (ret !== true && config.currentModule && config.currentModule.onError) {
+      ret = config.currentModule.onError(error);
+    } 
+    if (ret === true ||
+        (config.currentModule && config.currentModule.ignoreGlobalErrors) ||
+        (config.current && config.current.ignoreGlobalErrors)
+    ) {
+      return true;
+    }
+
   	if (config.current) {
-  		if (config.current.ignoreGlobalErrors) {
-  			return true;
-  		}
   		pushFailure.apply(undefined, [error.message, error.fileName + ":" + error.lineNumber].concat(args));
   	} else {
   		test("global failure", extend(function () {
@@ -2999,14 +3088,23 @@
   		source: reason.stack || sourceFromStacktrace(3)
   	};
 
-  	var currentTest = config.current;
-  	if (currentTest) {
-  		currentTest.assert.pushResult(resultInfo);
-  	} else {
-  		test("global failure", extend(function (assert) {
-  			assert.pushResult(resultInfo);
-  		}, { validTest: true }));
-  	}
+    var ret;
+    if (config.current && config.current.onUnhandledRejection) {
+      ret = config.current.onUnhandledRejection(reason);
+    } 
+    if (ret !== true && config.currentModule && config.currentModule.onUnhandledRejection) {
+      ret = config.currentModule.onUnhandledRejection(reason);
+    } 
+    if (ret !== true) {
+    	var currentTest = config.current;
+    	if (currentTest) {
+    		currentTest.assert.pushResult(resultInfo);
+    	} else {
+    		test("global failure", extend(function (assert) {
+    			assert.pushResult(resultInfo);
+    		}, { validTest: true }));
+    	}
+    }
   }
 
   var QUnit = {};
@@ -4279,6 +4377,7 @@
   	// returning false will let it run.
   	window.onerror = function (message, fileName, lineNumber, columnNumber, errorObject) {
   		var ret = false;
+
   		if (originalWindowOnError) {
   			for (var _len = arguments.length, args = Array(_len > 5 ? _len - 5 : 0), _key = 5; _key < _len; _key++) {
   				args[_key - 5] = arguments[_key];
@@ -4301,12 +4400,36 @@
   			ret = QUnit.onError(error);
   		}
 
+      // always clean up internals: reduce the risk of polluting subsequent tests with
+      // shrapnel left over from this failed module setup / unhandled rejection:
+      if (!QUnit.config.current && QUnit.config.currentModule && QUnit.config.currentModule.__setupEnd) {
+        QUnit.config.currentModule.__setupEnd();
+      }
+
   		return ret;
   	};
+
+  	window.addEventListener("error", function (event) {
+  		var ret = false;
+
+      // always clean up internals: reduce the risk of polluting subsequent tests with
+      // shrapnel left over from this failed module setup / unhandled rejection:
+      // if (!QUnit.config.current && QUnit.config.currentModule && QUnit.config.currentModule.__setupEnd) {
+      //   QUnit.config.currentModule.__setupEnd();
+      // }
+
+  		return ret;
+  	});
 
   	// Listen for unhandled rejections, and call QUnit.onUnhandledRejection
   	window.addEventListener("unhandledrejection", function (event) {
   		QUnit.onUnhandledRejection(event.reason);
+
+      // always clean up internals: reduce the risk of polluting subsequent tests with
+      // shrapnel left over from this failed module setup / unhandled rejection:
+      if (!QUnit.config.current && QUnit.config.currentModule && QUnit.config.currentModule.__setupEnd) {
+        QUnit.config.currentModule.__setupEnd();
+      }
   	});
   })();
 
