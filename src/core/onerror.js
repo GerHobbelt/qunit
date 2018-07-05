@@ -20,7 +20,7 @@ export default function onError( error, ...args ) {
 		( config.currentModule && config.currentModule.ignoreGlobalErrors ) ||
 		( config.current && config.current.ignoreGlobalErrors )
 	) {
-	  return true;
+		return true;
 	}
 
 	if ( config.current ) {
