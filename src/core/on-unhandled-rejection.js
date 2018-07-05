@@ -14,12 +14,22 @@ export default function onUnhandledRejection( reason ) {
 	};
 
 	const currentTest = config.current;
-	if ( currentTest ) {
-		currentTest.assert.pushResult( resultInfo );
-	} else {
-		test( "global failure", extend( function( assert ) {
-			assert.pushResult( resultInfo );
-		}, { validTest: true } ) );
+	let ret;
+
+	if (currentTest && currentTest.onUnhandledRejection) {
+		ret = currentTest.onUnhandledRejection(reason);
+	}
+	if (ret !== true && config.currentModule && config.currentModule.onUnhandledRejection) {
+		ret = config.currentModule.onUnhandledRejection(reason);
+	}
+	if (ret !== true) {
+		if (currentTest) {
+			currentTest.assert.pushResult( resultInfo );
+		} else {
+			test( "global failure", extend( function( assert ) {
+				assert.pushResult( resultInfo );
+			}, { validTest: true } ) );
+		}
 	}
 }
 
