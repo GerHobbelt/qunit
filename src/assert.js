@@ -272,13 +272,14 @@ class Assert {
 			}
 		}
 
+		const oldIG = currentTest.ignoreGlobalErrors;
 		currentTest.ignoreGlobalErrors = true;
 		try {
 			block.call( currentTest.testEnvironment );
 		} catch ( e ) {
 			actual = e;
 		}
-		currentTest.ignoreGlobalErrors = false;
+		currentTest.ignoreGlobalErrors = oldIG;
 
 		if ( actual ) {
 			const expectedType = objectType( expected );
