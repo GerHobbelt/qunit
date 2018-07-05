@@ -6,7 +6,7 @@
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2018-07-05T06:21Z
+ * Date: 2018-07-05T06:45Z
  */
 (function (global$1) {
   'use strict';
@@ -2637,7 +2637,61 @@
   				assert = currentTest.assert;
   			}
 
-  			return assert.test.pushResult(resultInfo);
+  			// prevent infinite recursion when user coded anything wrong in a custom assert.pushResult() override,
+  			// as shown in the last test in unhandled-rejection.js test files, f.e.
+  			//
+  			// We count the nesting levels and when it gets obvious, we cop out by invoking the hardcoded base method.
+  			var test$$1 = assert.test;
+  			if (!test$$1.__assertPushResultCallCount) {
+  				test$$1.__assertPushResultCallCount = 1;
+  			} else {
+  				test$$1.__assertPushResultCallCount++;
+  				if (test$$1.__assertPushResultCallCount > 3) {
+
+  					// WARNING: failing by throwing an error may sound good to you, but when the onError()
+  					// API is invoked, another error gets pushed through here and we're back at where we
+  					// started: infinite recursion!
+  					//
+  					// Hence we should something simple and very safe right now:
+  					try {
+  						var e = new Error("infinite recursion through " + "QUnit::assert::pushResult() API: you might want " + "to check your hooks & assert overrides");
+  						console.error(e);
+
+  						if (document) {
+  							var tests = document.getElementById("qunit-tests");
+  							if (tests) {
+  								var report = document.createElement("li");
+  								report.className = "fail";
+  								var subject = document.createElement("strong");
+  								subject.textContent = "" + (test$$1.module && test$$1.module.name) + ": " + test$$1.testName + "\nError: " + e.message;
+  								subject.innerHTML = subject.innerHTML.replace(/\n/g, "<br />");
+  								report.appendChild(subject);
+
+  								var trace = document.createElement("p");
+  								trace.textContent = e.stack.replace(/^[^\n]*\n/, "");
+  								report.appendChild(trace);
+
+  								tests.appendChild(report);
+  							}
+  						}
+
+  						// this.assertions.push({
+  						//   result: !!resultInfo.result,
+  						//   message: resultInfo.message
+  						// });
+  						this.assertions.push({
+  							result: false,
+  							message: e.message + " @\n" + e.stack
+  						});
+  					} catch (ex) {
+  						console.error(ex);
+  					}
+  					test$$1.__assertPushResultCallCount = 0;
+  					return;
+  				}
+  			}
+  			test$$1.pushResult(resultInfo);
+  			test$$1.__assertPushResultCallCount--;
   		}
   	}, {
   		key: "ok",
