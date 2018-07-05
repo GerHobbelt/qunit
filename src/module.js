@@ -1,3 +1,4 @@
+import QUnit from "../src/core";
 import config from "./core/config";
 
 import SuiteReport from "./reports/suite";
@@ -75,9 +76,36 @@ function processModule( name, options, executeNow, modifiers = {} ) {
 	if ( objectType( executeNow ) === "function" ) {
 		moduleStack.push( module );
 		config.currentModule = module;
-		executeNow.call( module.testEnvironment, moduleFns );
-		moduleStack.pop();
-		module = module.parentModule || currentModule;
+		module.__setupEnd = function moduleSetupEnd() {
+			module.__setupEnd = function() {
+
+				//debugger;
+			};
+			moduleStack.pop();
+			module = module.parentModule || currentModule;
+			config.currentModule = module;
+		};
+		try {
+			executeNow.call( module.testEnvironment, moduleFns );
+		} catch ( e ) {
+			var eInfo = {
+				message: "Module " + name + ": module init failed: " + ( e.message || e ),
+				fileName: e.fileName,
+				lineNumber: e.lineNumber,
+				columnNumber: e.columnNumber,
+				errorObject: e
+			};
+			var ret = QUnit.onError( eInfo );
+			if ( ret !== true ) {
+
+				// QUnit.pushFailure("Module " + name + ": module init failed: " + (e.message || e), extractStacktrace(e, 0, true));
+				throw e;
+			}
+		}
+
+		// Spurious case: direct invocation of QUnit.onError() inside the `executeNow` code
+		// should not blow up the moduleStack nor the currentModule!
+		module.__setupEnd();
 	}
 
 	config.currentModule = module;

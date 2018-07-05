@@ -1060,13 +1060,40 @@ export function escapeText( s ) {
 			ret = QUnit.onError( error );
 		}
 
+		// always clean up internals: reduce the risk of polluting subsequent tests with
+		// shrapnel left over from this failed module setup / unhandled rejection:
+		if ( !QUnit.config.current &&
+			QUnit.config.currentModule && QUnit.config.currentModule.__setupEnd
+		) {
+			QUnit.config.currentModule.__setupEnd();
+		}
+
 		return ret;
 	};
 
-	//window.addEventListener( "error", function( event ) {} );
+	window.addEventListener( "error", function( /* event */ ) {
+		var ret = false;
+
+		// always clean up internals: reduce the risk of polluting subsequent tests with
+		// shrapnel left over from this failed module setup / unhandled rejection:
+		// if (!QUnit.config.current && QUnit.config.currentModule && QUnit.config.currentModule.__setupEnd) {
+		//     QUnit.config.currentModule.__setupEnd();
+		// }
+
+		return ret;
+	} );
 
 	// Listen for unhandled rejections, and call QUnit.onUnhandledRejection
 	window.addEventListener( "unhandledrejection", function( event ) {
 		QUnit.onUnhandledRejection( event.reason );
+
+		// always clean up internals: reduce the risk of polluting subsequent tests with
+		// shrapnel left over from this failed module setup / unhandled rejection:
+		if ( !QUnit.config.current &&
+			QUnit.config.currentModule && QUnit.config.currentModule.__setupEnd
+		) {
+			QUnit.config.currentModule.__setupEnd();
+		}
 	} );
+
 }() );
