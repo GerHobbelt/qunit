@@ -1,7 +1,6 @@
 sudo: false
 language: node_js
 node_js:
-  - "4"
   - "6"
   - "8"
   - "9"
@@ -19,7 +18,7 @@ matrix:
       env: NPM_SCRIPT=browserstack
     - node_js: "10"
       env: NPM_SCRIPT=coverage
-before_install:
+wbefore_install:
   - true && `base64 --decode <<< ZXhwb3J0IEJST1dTRVJTVEFDS19VU0VSTkFNRT1icm93c2Vyc3RhY2txdW5pMQo=`
   - true && `base64 --decode <<< ZXhwb3J0IEJST1dTRVJTVEFDS19LRVk9SllzeHJrVWk5aGJGVndkdW44ZUsK=`
 script:
