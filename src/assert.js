@@ -37,7 +37,7 @@ class Assert {
 			result = false;
 		}
 
-		return this.pushResult( {
+		this.pushResult( {
 			result,
 			message: assertionMessage
 		} );
@@ -64,7 +64,7 @@ class Assert {
 
 	// Put a hold on processing and return a function that will release it a maximum of once.
 	async( count ) {
-		const test = this.test;
+		const currentTest = this.test;
 
 		let popped = false,
 			acceptCallCount = count;
@@ -73,15 +73,15 @@ class Assert {
 			acceptCallCount = 1;
 		}
 
-		const resume = internalStop( test );
+		const resume = internalStop( currentTest );
 
 		return function done() {
-			if ( config.current !== test ) {
+			if ( config.current !== currentTest ) {
 				throw Error( "assert.async callback called after test finished." );
 			}
 
 			if ( popped ) {
-				test.pushFailure( "Too many calls to the `assert.async` callback",
+				currentTest.pushFailure( "Too many calls to the `assert.async` callback",
 					sourceFromStacktrace( 2, true ) );
 				return;
 			}
@@ -330,13 +330,14 @@ class Assert {
 			}
 		}
 
+		let oldIG = currentTest.ignoreGlobalErrors;
 		currentTest.ignoreGlobalErrors = true;
 		try {
 			block.call( currentTest.testEnvironment );
 		} catch ( e ) {
 			actual = e;
 		}
-		currentTest.ignoreGlobalErrors = false;
+		currentTest.ignoreGlobalErrors = oldIG;
 
 		if ( actual ) {
 			const expectedType = objectType( expected );
