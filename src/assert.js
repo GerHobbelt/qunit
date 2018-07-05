@@ -161,7 +161,7 @@ class Assert {
 							var subject = document.createElement( "strong" );
 							subject.textContent = "" + ( test.module && test.module.name ) +
 									": " + test.testName + "\nError: " + e.message;
-							subject.innerHTML = subject.innerHTML.replace( /\n/g, "<br>" );
+							subject.innerHTML = subject.innerHTML.replace( /\n/g, "<br />" );
 							report.appendChild( subject );
 
 							var trace = document.createElement( "p" );
@@ -171,7 +171,7 @@ class Assert {
 							tests.appendChild( report );
 						}
 					}
-					
+
 					// this.assertions.push({
 					//   result: !!resultInfo.result,
 					//   message: resultInfo.message
