@@ -33,10 +33,10 @@
   "dependencies": {
     "commander": "2.16.0",
     "exists-stat": "1.0.0",
-    "findup-sync": "2.0.0",
+    "findup-sync": "4.0.0",
     "js-reporters": "1.2.1",
     "resolve": "1.8.1",
-    "sane": "2.5.2",
+    "sane": "5.0.0",
     "walk-sync": "0.3.2"
   },
   "devDependencies": {
